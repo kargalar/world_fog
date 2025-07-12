@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:math';
 import 'models/route_model.dart';
 import 'services/route_service.dart';
 import 'pages/profile_page.dart';
@@ -384,24 +385,46 @@ class _WorldFogPageState extends State<WorldFogPage> {
   }
 
   Color _getColorForFrequency(int frequency) {
-    // Frekansı 0-10 arasında sınırla
-    final clampedFreq = frequency.clamp(0, 10);
-
     // Gradient renk paleti: Mavi (az) -> Yeşil -> Sarı -> Turuncu -> Kırmızı (çok)
     final colors = [
-      Colors.blue, // 0-1 kez
-      Colors.lightBlue, // 2 kez
-      Colors.cyan, // 3 kez
-      Colors.teal, // 4 kez
-      Colors.green, // 5 kez
-      Colors.lightGreen, // 6 kez
-      Colors.yellow, // 7 kez
-      Colors.orange, // 8 kez
-      Colors.deepOrange, // 9 kez
-      Colors.red, // 10+ kez
+      Colors.blue, // 0 kez
+      Colors.lightBlue, // 1 kez
+      Colors.cyan, // 2 kez
+      Colors.teal, // 3 kez
+      Colors.green, // 4 kez
+      Colors.lightGreen, // 5 kez
+      Colors.yellow, // 6 kez
+      Colors.orange, // 7 kez
+      Colors.deepOrange, // 8 kez
+      Colors.red, // 9+ kez
     ];
 
+    // Frekansı array boyutuna göre sınırla
+    final clampedFreq = frequency.clamp(0, colors.length - 1);
     return colors[clampedFreq];
+  }
+
+  // Coğrafi daire polygon noktaları oluştur
+  List<LatLng> _createCirclePoints(LatLng center, double radiusInMeters) {
+    const int numPoints = 32; // Daire için nokta sayısı
+    final List<LatLng> points = [];
+
+    // Metre cinsinden coğrafi koordinatlara dönüştürme
+    // Yaklaşık değerler (enlemde 1 derece = 111320 metre)
+    const double metersPerDegreeLat = 111320.0;
+    final double metersPerDegreeLng = 111320.0 * cos(center.latitude * pi / 180);
+
+    final double deltaLat = radiusInMeters / metersPerDegreeLat;
+    final double deltaLng = radiusInMeters / metersPerDegreeLng;
+
+    for (int i = 0; i < numPoints; i++) {
+      final double angle = (i * 2 * pi) / numPoints;
+      final double lat = center.latitude + deltaLat * sin(angle);
+      final double lng = center.longitude + deltaLng * cos(angle);
+      points.add(LatLng(lat, lng));
+    }
+
+    return points;
   }
 
   @override
@@ -514,32 +537,31 @@ class _WorldFogPageState extends State<WorldFogPage> {
                         userAgentPackageName: 'com.example.world_fog',
                         subdomains: const ['a', 'b', 'c', 'd'],
                       ),
-                      // Keşfedilen alanlar (Circle layer ile yumuşak geçiş)
+                      // Keşfedilen alanlar (Coğrafi alan boyutunu koruyan sis efekti)
                       if (_exploredAreas.isNotEmpty)
-                        CircleLayer(
-                          circles: _exploredAreas.map((area) {
-                            // Yakınlık bazlı opacity hesaplama
-                            double opacity = 0.3;
+                        PolygonLayer(
+                          polygons: _exploredAreas.map((area) {
+                            // Yakınlık bazlı yoğunluk hesaplama
                             int nearbyCount = 0;
-
                             for (final otherArea in _exploredAreas) {
                               if (area != otherArea) {
                                 final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
-                                if (distance < _explorationRadius * 2) {
+                                if (distance < _explorationRadius * 1.5) {
                                   nearbyCount++;
                                 }
                               }
                             }
 
-                            // Yoğunluğa göre opacity artır
-                            opacity = (0.2 + (nearbyCount * 0.1)).clamp(0.2, 0.8);
+                            // Renk ve opacity hesaplama
+                            final color = _getColorForFrequency(nearbyCount);
+                            final opacity = (0.15 + (nearbyCount * 0.05)).clamp(0.1, 0.6);
 
-                            return CircleMarker(
-                              point: area,
-                              radius: _explorationRadius / 2,
-                              color: _getColorForFrequency(nearbyCount).withValues(alpha: opacity),
-                              borderColor: _getColorForFrequency(nearbyCount).withValues(alpha: opacity + 0.2),
-                              borderStrokeWidth: 2,
+                            // Coğrafi alan için daire polygon oluştur
+                            return Polygon(
+                              points: _createCirclePoints(area, _explorationRadius),
+                              color: color.withValues(alpha: opacity),
+                              borderColor: Colors.transparent,
+                              borderStrokeWidth: 0,
                             );
                           }).toList(),
                         ),
