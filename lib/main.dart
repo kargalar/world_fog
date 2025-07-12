@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'dart:math' as math;
 import 'models/route_model.dart';
 import 'services/route_service.dart';
 import 'pages/profile_page.dart';
@@ -106,6 +104,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
   void initState() {
     super.initState();
     _initializeApp();
+    _startLocationTracking(); // Sürekli konum takibi
   }
 
   Future<void> _initializeApp() async {
@@ -198,43 +197,9 @@ class _WorldFogPageState extends State<WorldFogPage> {
         });
       }
     });
-
-    _positionStream =
-        Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 10, // 10 metre hareket gerekli
-          ),
-        ).listen((Position position) {
-          final newPosition = LatLng(position.latitude, position.longitude);
-
-          // Mesafe hesapla
-          if (_currentRoutePoints.isNotEmpty) {
-            final lastPoint = _currentRoutePoints.last;
-            final distance = Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPosition.latitude, newPosition.longitude);
-            _currentRouteDistance += distance;
-          }
-
-          // Yeni noktayı rotaya ekle
-          _currentRoutePoints.add(newPosition);
-
-          // Yeni alan keşfedildi mi kontrol et
-          if (_isNewAreaExplored(newPosition)) {
-            setState(() {
-              _exploredAreas.add(newPosition);
-              _currentRouteExploredAreas.add(newPosition);
-            });
-            _saveExploredAreas();
-          }
-
-          setState(() {
-            _currentPosition = newPosition;
-          });
-        });
   }
 
   void _stopTracking() {
-    _positionStream?.cancel();
     _durationTimer?.cancel();
 
     // Rotayı kaydet
@@ -310,7 +275,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
   }
 
   void _pauseTracking() {
-    _positionStream?.cancel();
     _durationTimer?.cancel();
 
     setState(() {
@@ -339,40 +303,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
         });
       }
     });
-
-    // Konum takibini yeniden başlat
-    _positionStream =
-        Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 10, // 10 metre hareket gerekli
-          ),
-        ).listen((Position position) {
-          final newPosition = LatLng(position.latitude, position.longitude);
-
-          // Mesafe hesapla
-          if (_currentRoutePoints.isNotEmpty) {
-            final lastPoint = _currentRoutePoints.last;
-            final distance = Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPosition.latitude, newPosition.longitude);
-            _currentRouteDistance += distance;
-          }
-
-          // Yeni noktayı rotaya ekle
-          _currentRoutePoints.add(newPosition);
-
-          // Yeni alan keşfedildi mi kontrol et
-          if (_isNewAreaExplored(newPosition)) {
-            setState(() {
-              _exploredAreas.add(newPosition);
-              _currentRouteExploredAreas.add(newPosition);
-            });
-            _saveExploredAreas();
-          }
-
-          setState(() {
-            _currentPosition = newPosition;
-          });
-        });
   }
 
   Future<void> _saveCurrentRoute([String? customName]) async {
@@ -618,7 +548,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
                         PolylineLayer(
                           polylines: _pastRoutes.map((route) {
                             // Her rota için farklı renk
-                            final colors = [Colors.purple.withOpacity(0.6), Colors.pink.withOpacity(0.6), Colors.indigo.withOpacity(0.6), Colors.brown.withOpacity(0.6), Colors.grey.withOpacity(0.6)];
+                            final colors = [Colors.purple.withValues(alpha: 0.6), Colors.pink.withValues(alpha: 0.6), Colors.indigo.withValues(alpha: 0.6), Colors.brown.withValues(alpha: 0.6), Colors.grey.withValues(alpha: 0.6)];
                             final colorIndex = _pastRoutes.indexOf(route) % colors.length;
 
                             return Polyline(points: route.routePoints, color: colors[colorIndex], strokeWidth: 2.0);
@@ -682,7 +612,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.2),
+                            color: color.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: color, width: 1),
                           ),
@@ -717,6 +647,46 @@ class _WorldFogPageState extends State<WorldFogPage> {
             )
           : FloatingActionButton(heroTag: "start", onPressed: _startTracking, backgroundColor: Colors.green, child: const Icon(Icons.play_arrow)),
     );
+  }
+
+  // Sürekli konum takibi (rota takibinden bağımsız)
+  void _startLocationTracking() {
+    _positionStream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10, // 10 metre hareket gerekli
+          ),
+        ).listen((Position position) {
+          final newPosition = LatLng(position.latitude, position.longitude);
+
+          // Konum her zaman güncellenir
+          setState(() {
+            _currentPosition = newPosition;
+          });
+
+          // Sadece rota aktifken rota verilerini güncelle
+          if (_isTracking && !_isPaused) {
+            // Mesafe hesapla
+            if (_currentRoutePoints.isNotEmpty) {
+              final lastPoint = _currentRoutePoints.last;
+              final distance = Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPosition.latitude, newPosition.longitude);
+              _currentRouteDistance += distance;
+            }
+
+            // Yeni noktayı rotaya ekle
+            _currentRoutePoints.add(newPosition);
+
+            // Yeni alan keşfedildi mi kontrol et
+            if (_isNewAreaExplored(newPosition)) {
+              setState(() {
+                _exploredAreas.add(newPosition);
+                _currentRouteExploredAreas.add(newPosition);
+              });
+              _saveExploredAreas();
+            }
+          }
+        });
   }
 
   @override
