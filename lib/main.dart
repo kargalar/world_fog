@@ -105,6 +105,11 @@ class _WorldFogPageState extends State<WorldFogPage> {
   bool _showPastRoutes = false;
   List<RouteModel> _pastRoutes = [];
 
+  // State değişkenleri
+  bool _isFollowingLocation = false;
+  LatLng? _lastPosition;
+  double? _currentBearing;
+
   @override
   void initState() {
     super.initState();
@@ -424,7 +429,9 @@ class _WorldFogPageState extends State<WorldFogPage> {
   bool _isNewAreaExplored(LatLng newPosition) {
     for (final exploredArea in _exploredAreas) {
       final distance = Geolocator.distanceBetween(exploredArea.latitude, exploredArea.longitude, newPosition.latitude, newPosition.longitude);
-      if (distance < _explorationRadius) {
+      // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! buradaki 100, 100 metrede bir keşfet gibi bir anlama geliyor.
+      // TODO:
+      if (distance < 100) {
         return false; // Bu alan zaten keşfedilmiş
       }
     }
@@ -433,87 +440,92 @@ class _WorldFogPageState extends State<WorldFogPage> {
 
   void _goToCurrentLocation() {
     if (_currentPosition != null) {
-      _mapController.move(_currentPosition!, _mapController.camera.zoom);
-    }
-  }
-
-  Color _getColorForFrequency(int frequency) {
-    // Duman efekti için gradient renk paleti: Açık mavi (az) -> Kırmızı (çok)
-    final colors = [
-      Colors.lightBlue.shade100, // 0 kez - çok açık mavi
-      Colors.lightBlue.shade200, // 1 kez
-      Colors.lightBlue.shade300, // 2 kez
-      Colors.blue.shade300, // 3 kez
-      Colors.blue.shade400, // 4 kez
-      Colors.purple.shade300, // 5 kez - mor geçiş
-      Colors.purple.shade400, // 6 kez
-      Colors.red.shade300, // 7 kez - açık kırmızı
-      Colors.red.shade500, // 8 kez
-      Colors.red.shade700, // 9+ kez - koyu kırmızı
-    ];
-
-    // Frekansı array boyutuna göre sınırla
-    final clampedFreq = frequency.clamp(0, colors.length - 1);
-    return colors[clampedFreq];
-  }
-
-  // Duman efekti için yumuşak şekil polygon noktaları oluştur
-  List<LatLng> _createSmokeCloudPoints(LatLng center, double radiusInMeters, int seed) {
-    const int numPoints = 24; // Daha az nokta ile yumuşak şekil
-    final List<LatLng> points = [];
-    final Random random = Random(seed); // Tutarlı şekil için seed kullan
-
-    // Metre cinsinden coğrafi koordinatlara dönüştürme
-    const double metersPerDegreeLat = 111320.0;
-    final double metersPerDegreeLng = 111320.0 * cos(center.latitude * pi / 180);
-
-    for (int i = 0; i < numPoints; i++) {
-      final double angle = (i * 2 * pi) / numPoints;
-
-      // Duman efekti için rastgele varyasyon ekle
-      final double radiusVariation = 0.7 + (random.nextDouble() * 0.6); // %70-130 arası varyasyon
-      final double angleVariation = angle + (random.nextDouble() - 0.5) * 0.3; // Açıda küçük varyasyon
-
-      final double effectiveRadius = radiusInMeters * radiusVariation;
-      final double effectiveDeltaLat = effectiveRadius / metersPerDegreeLat;
-      final double effectiveDeltaLng = effectiveRadius / metersPerDegreeLng;
-
-      final double lat = center.latitude + effectiveDeltaLat * sin(angleVariation);
-      final double lng = center.longitude + effectiveDeltaLng * cos(angleVariation);
-      points.add(LatLng(lat, lng));
-    }
-
-    return points;
-  }
-
-  // Çoklu duman bulutları için farklı boyutlarda şekiller oluştur
-  List<Polygon> _createMultiLayerSmoke(LatLng center, double radiusInMeters, Color baseColor, double baseOpacity, int seed) {
-    final List<Polygon> smokeLayers = [];
-
-    // 3 katmanlı duman efekti
-    for (int layer = 0; layer < 3; layer++) {
-      final double layerRadius = radiusInMeters * (0.6 + (layer * 0.3)); // Her katman biraz daha büyük
-      final double layerOpacity = baseOpacity * (1.0 - (layer * 0.15)); // Katmanlar arası opacity farkını azalt
-      final int layerSeed = seed + layer * 100;
-
-      // Katman için hafif renk varyasyonu
-      Color layerColor = baseColor;
-      if (layer > 0) {
-        final int colorShift = 10 + (layer * 5);
-        layerColor = Color.fromARGB(baseColor.alpha, (baseColor.red + colorShift).clamp(0, 255), (baseColor.green + colorShift).clamp(0, 255), (baseColor.blue + colorShift).clamp(0, 255));
+      if (_isFollowingLocation) {
+        // Oto takip modundan çıkıyoruz, haritayı sıfırla
+        _mapController.moveAndRotate(_currentPosition!, _mapController.camera.zoom, 0);
+      } else {
+        // Oto takip moduna giriyoruz
+        if (_currentBearing != null) {
+          _mapController.moveAndRotate(_currentPosition!, _mapController.camera.zoom, -_currentBearing!);
+        } else {
+          _mapController.move(_currentPosition!, _mapController.camera.zoom);
+        }
       }
-
-      smokeLayers.add(
-        Polygon(
-          points: _createSmokeCloudPoints(center, layerRadius, layerSeed),
-          color: layerColor.withValues(alpha: layerOpacity),
-          borderColor: Colors.transparent,
-          borderStrokeWidth: 0,
-        ),
-      );
+      setState(() {
+        _isFollowingLocation = !_isFollowingLocation;
+      });
     }
+  }
 
-    return smokeLayers;
+  double _calculateBearing(LatLng start, LatLng end) {
+    final lat1 = start.latitude * pi / 180;
+    final lat2 = end.latitude * pi / 180;
+    final dLon = (end.longitude - start.longitude) * pi / 180;
+    final y = sin(dLon) * cos(lat2);
+    final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+    final bearing = atan2(y, x) * 180 / pi;
+    return (bearing + 360) % 360;
+  }
+
+  // Sürekli konum takibi (rota takibinden bağımsız)
+  void _startLocationTracking() {
+    _positionStream =
+        Geolocator.getPositionStream(
+          locationSettings: LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: _distanceFilter.toInt(), // Kullanıcı tarafından ayarlanabilir
+          ),
+        ).listen((Position position) {
+          final newPosition = LatLng(position.latitude, position.longitude);
+
+          // Konum her zaman güncellenir
+          setState(() {
+            _lastPosition = _currentPosition;
+            _currentPosition = newPosition;
+            if (_lastPosition != null) {
+              _currentBearing = _calculateBearing(_lastPosition!, newPosition);
+            }
+          });
+
+          if (_isFollowingLocation && _currentPosition != null) {
+            // Oto takip modunda haritayı kullanıcının yönüne göre döndür
+            if (_currentBearing != null) {
+              _mapController.moveAndRotate(_currentPosition!, _mapController.camera.zoom, -_currentBearing!);
+            } else {
+              _mapController.move(_currentPosition!, _mapController.camera.zoom);
+            }
+          }
+
+          // Sadece rota aktifken rota verilerini güncelle
+          if (_isTracking && !_isPaused) {
+            // Mesafe hesapla
+            if (_currentRoutePoints.isNotEmpty) {
+              final lastPoint = _currentRoutePoints.last;
+              final distance = Geolocator.distanceBetween(lastPoint.position.latitude, lastPoint.position.longitude, newPosition.latitude, newPosition.longitude);
+              _currentRouteDistance += distance;
+            }
+
+            // Yeni noktayı rotaya ekle (yükseklik bilgisi ile)
+            _currentRoutePoints.add(RoutePoint(position: newPosition, altitude: position.altitude, timestamp: DateTime.now()));
+
+            // Yeni alan keşfedildi mi kontrol et
+            if (_isNewAreaExplored(newPosition)) {
+              setState(() {
+                _exploredAreas.add(newPosition);
+                _currentRouteExploredAreas.add(newPosition);
+              });
+              _saveExploredAreas();
+            }
+          }
+        });
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    _durationTimer?.cancel();
+    _breakTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -522,8 +534,8 @@ class _WorldFogPageState extends State<WorldFogPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          IconButton(icon: const Icon(Icons.my_location), onPressed: _goToCurrentLocation, tooltip: 'Konumuma Git'),
-          IconButton(icon: Icon(_showPastRoutes ? Icons.route : Icons.route_outlined), onPressed: _togglePastRoutes, tooltip: _showPastRoutes ? 'Geçmiş Rotaları Gizle' : 'Geçmiş Rotaları Göster'),
+          IconButton(icon: Icon(_isFollowingLocation ? Icons.navigation : Icons.my_location), onPressed: _goToCurrentLocation, tooltip: _isFollowingLocation ? 'Otomatik Takip Kapat' : 'Konumuma Git/Otomatik Takip'),
+          IconButton(icon: const Icon(Icons.route), onPressed: _togglePastRoutes, tooltip: _showPastRoutes ? 'Geçmiş Rotaları Gizle' : 'Geçmiş Rotaları Göster'),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -664,13 +676,13 @@ class _WorldFogPageState extends State<WorldFogPage> {
 
                             // Renk ve opacity hesaplama - opacity sabit kalır, sadece renk değişir
                             final color = _getColorForFrequency(nearbyCount);
-                            final baseOpacity = _areaOpacity; // Kullanıcı ayarından sabit opacity
+                            final baseOpacity = _areaOpacity; // Kullanıcı ayarından sabit opacity - her katman için aynı kalacak
 
                             // Duman bulutları için seed oluştur (tutarlı şekil için)
                             final seed = area.latitude.hashCode ^ area.longitude.hashCode;
 
-                            // Çoklu katmanlı duman efekti oluştur
-                            return _createMultiLayerSmoke(area, _explorationRadius, color, baseOpacity, seed);
+                            // Çoklu katmanlı duman efekti oluştur - opacity sabit kalır, sadece renk değişir
+                            return _createMultiLayerSmokeWithFixedOpacity(area, _explorationRadius, color, baseOpacity, seed);
                           }).toList(),
                         ),
                       // Geçmiş rotalar
@@ -701,17 +713,9 @@ class _WorldFogPageState extends State<WorldFogPage> {
                           markers: [
                             Marker(
                               point: _currentPosition!,
-                              width: 20,
-                              height: 20,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _isTracking
-                                      ? (_isPaused ? (Theme.of(context).brightness == Brightness.dark ? Colors.orange.shade300 : Colors.orange) : (Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue : Colors.blue))
-                                      : (Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade400 : Colors.grey),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                              ),
+                              width: 40,
+                              height: 40,
+                              child: Icon(Icons.navigation, color: Colors.blue, size: 40), // Ok her zaman yukarı bakar
                             ),
                           ],
                         ),
@@ -785,51 +789,84 @@ class _WorldFogPageState extends State<WorldFogPage> {
     );
   }
 
-  // Sürekli konum takibi (rota takibinden bağımsız)
-  void _startLocationTracking() {
-    _positionStream =
-        Geolocator.getPositionStream(
-          locationSettings: LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: _distanceFilter.toInt(), // Kullanıcı tarafından ayarlanabilir
-          ),
-        ).listen((Position position) {
-          final newPosition = LatLng(position.latitude, position.longitude);
+  Color _getColorForFrequency(int visitCount) {
+    // Visit count'a göre gradient renk paleti: Açık mavi (1 kez) -> Kırmızı (çok)
+    final colors = [
+      Colors.lightBlue.shade100, // 1 kez - çok açık mavi
+      Colors.lightBlue.shade200, // 2 kez
+      Colors.lightBlue.shade300, // 3 kez
+      Colors.blue.shade300, // 4 kez
+      Colors.blue.shade400, // 5 kez
+      Colors.purple.shade300, // 6 kez - mor geçiş
+      Colors.purple.shade400, // 7 kez
+      Colors.pink.shade300, // 8 kez - pembe
+      Colors.red.shade400, // 9 kez - kırmızı
+      Colors.red.shade600, // 10 kez - koyu kırmızı
+      Colors.red.shade800, // 11+ kez - çok koyu kırmızı
+    ];
 
-          // Konum her zaman güncellenir
-          setState(() {
-            _currentPosition = newPosition;
-          });
-
-          // Sadece rota aktifken rota verilerini güncelle
-          if (_isTracking && !_isPaused) {
-            // Mesafe hesapla
-            if (_currentRoutePoints.isNotEmpty) {
-              final lastPoint = _currentRoutePoints.last;
-              final distance = Geolocator.distanceBetween(lastPoint.position.latitude, lastPoint.position.longitude, newPosition.latitude, newPosition.longitude);
-              _currentRouteDistance += distance;
-            }
-
-            // Yeni noktayı rotaya ekle (yükseklik bilgisi ile)
-            _currentRoutePoints.add(RoutePoint(position: newPosition, altitude: position.altitude, timestamp: DateTime.now()));
-
-            // Yeni alan keşfedildi mi kontrol et
-            if (_isNewAreaExplored(newPosition)) {
-              setState(() {
-                _exploredAreas.add(newPosition);
-                _currentRouteExploredAreas.add(newPosition);
-              });
-              _saveExploredAreas();
-            }
-          }
-        });
+    // Visit count'u 1-based yapalım (minimum 1 olacak şekilde)
+    final adjustedCount = (visitCount - 1).clamp(0, colors.length - 1);
+    return colors[adjustedCount];
   }
 
-  @override
-  void dispose() {
-    _positionStream?.cancel();
-    _durationTimer?.cancel();
-    _breakTimer?.cancel();
-    super.dispose();
+  // Duman efekti için yumuşak şekil polygon noktaları oluştur
+  List<LatLng> _createSmokeCloudPoints(LatLng center, double radiusInMeters, int seed) {
+    const int numPoints = 24; // Daha az nokta ile yumuşak şekil
+    final List<LatLng> points = [];
+    final Random random = Random(seed); // Tutarlı şekil için seed kullan
+
+    // Coğrafi koordinat sisteminde metre cinsinden offset hesaplama
+    const double metersPerDegree = 111320;
+
+    for (int i = 0; i < numPoints; i++) {
+      final angle = (i * 360 / numPoints) * (pi / 180);
+
+      // Radius'a rastgele varyasyon ekle (daha organik görünüm için)
+      final radiusVariation = 0.7 + (random.nextDouble() * 0.6); // 0.7x - 1.3x arasında
+      final adjustedRadius = radiusInMeters * radiusVariation;
+
+      // Koordinat offsetleri hesapla
+      final dx = adjustedRadius * cos(angle) / metersPerDegree;
+      final dy = adjustedRadius * sin(angle) / (metersPerDegree * cos(center.latitude * pi / 180));
+
+      points.add(LatLng(center.latitude + dy, center.longitude + dx));
+    }
+
+    return points;
+  }
+
+  // Çoklu katmanlı duman efekti oluştur - opacity sabit kalır, sadece renk değişir
+  List<Polygon> _createMultiLayerSmokeWithFixedOpacity(LatLng center, double radius, Color color, double opacity, int seed) {
+    final polygons = <Polygon>[];
+
+    // 3 katmanlı duman efekti
+    for (int layer = 0; layer < 3; layer++) {
+      final layerRadius = radius * (0.6 + (layer * 0.2)); // %60, %80, %100 boyutlarında katmanlar
+      final layerSeed = seed + (layer * 1000);
+
+      // Her katman için aynı opacity kullan - sadece renk değişir
+      Color layerColor = color;
+      if (layer == 1) {
+        // İkinci katman için rengi biraz daha açık yap
+        layerColor = Color.lerp(color, Colors.white, 0.1) ?? color;
+      } else if (layer == 2) {
+        // Üçüncü katman için rengi biraz daha açık yap
+        layerColor = Color.lerp(color, Colors.white, 0.2) ?? color;
+      }
+
+      final points = _createSmokeCloudPoints(center, layerRadius, layerSeed);
+
+      polygons.add(
+        Polygon(
+          points: points,
+          color: layerColor.withOpacity(opacity), // Sabit opacity
+          borderColor: layerColor.withOpacity(opacity * 0.7), // Border da sabit opacity
+          borderStrokeWidth: 0.5,
+        ),
+      );
+    }
+
+    return polygons;
   }
 }
