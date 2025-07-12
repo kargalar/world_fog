@@ -86,7 +86,8 @@ class _WorldFogPageState extends State<WorldFogPage> {
   bool _isTracking = false;
   bool _isPaused = false;
   double _explorationRadius = 50.0; // Varsayılan 50 metre yarıçap (ayarlardan 1km'ye kadar çıkarılabilir)
-  double _distanceFilter = 10.0; // Konum güncellemesi için minimum mesafe (metre)
+  final double _distanceFilter = 1.0; // Konum güncellemesi için minimum mesafe (metre)
+  double _areaOpacity = 0.3; // Keşfedilen alanların şeffaflığı
 
   // Rota takibi için yeni değişkenler
   final List<RoutePoint> _currentRoutePoints = [];
@@ -121,11 +122,17 @@ class _WorldFogPageState extends State<WorldFogPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final radius = prefs.getDouble('exploration_radius') ?? 50.0;
-    final filter = prefs.getDouble('distance_filter') ?? 10.0;
+    final opacity = prefs.getDouble('area_opacity') ?? 0.3;
     setState(() {
       _explorationRadius = radius;
-      _distanceFilter = filter;
+      _areaOpacity = opacity;
     });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('exploration_radius', _explorationRadius);
+    await prefs.setDouble('area_opacity', _areaOpacity);
   }
 
   Future<void> _requestPermissions() async {
@@ -431,18 +438,18 @@ class _WorldFogPageState extends State<WorldFogPage> {
   }
 
   Color _getColorForFrequency(int frequency) {
-    // Duman efekti için gradient renk paleti: Açık mavi (az) -> Koyu mavi/mor (çok)
+    // Duman efekti için gradient renk paleti: Açık mavi (az) -> Kırmızı (çok)
     final colors = [
       Colors.lightBlue.shade100, // 0 kez - çok açık mavi
       Colors.lightBlue.shade200, // 1 kez
       Colors.lightBlue.shade300, // 2 kez
       Colors.blue.shade300, // 3 kez
       Colors.blue.shade400, // 4 kez
-      Colors.blue.shade500, // 5 kez
-      Colors.blue.shade600, // 6 kez
-      Colors.indigo.shade400, // 7 kez
-      Colors.indigo.shade600, // 8 kez
-      Colors.purple.shade600, // 9+ kez - koyu mor
+      Colors.purple.shade300, // 5 kez - mor geçiş
+      Colors.purple.shade400, // 6 kez
+      Colors.red.shade300, // 7 kez - açık kırmızı
+      Colors.red.shade500, // 8 kez
+      Colors.red.shade700, // 9+ kez - koyu kırmızı
     ];
 
     // Frekansı array boyutuna göre sınırla
@@ -486,7 +493,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
     // 3 katmanlı duman efekti
     for (int layer = 0; layer < 3; layer++) {
       final double layerRadius = radiusInMeters * (0.6 + (layer * 0.3)); // Her katman biraz daha büyük
-      final double layerOpacity = baseOpacity * (1.0 - (layer * 0.25)); // Her katman biraz daha şeffaf
+      final double layerOpacity = baseOpacity * (1.0 - (layer * 0.15)); // Katmanlar arası opacity farkını azalt
       final int layerSeed = seed + layer * 100;
 
       // Katman için hafif renk varyasyonu
@@ -532,18 +539,22 @@ class _WorldFogPageState extends State<WorldFogPage> {
                 MaterialPageRoute(
                   builder: (context) => SettingsPage(
                     onThemeChanged: widget.onThemeChanged,
-                    onRadiusChanged: (newRadius) {
+                    onRadiusChanged: (newRadius) async {
                       setState(() {
                         _explorationRadius = newRadius;
                       });
+                      await _saveSettings();
+                      // Haritadaki duman efektlerini yeniden çiz
+                      setState(() {});
                     },
-                    onDistanceFilterChanged: (newFilter) {
+
+                    onOpacityChanged: (newOpacity) async {
                       setState(() {
-                        _distanceFilter = newFilter;
+                        _areaOpacity = newOpacity;
                       });
-                      // Konum takibini yeniden başlat
-                      _positionStream?.cancel();
-                      _startLocationTracking();
+                      await _saveSettings();
+                      // Haritadaki duman efektlerini yeniden çiz
+                      setState(() {});
                     },
                   ),
                 ),
@@ -651,9 +662,9 @@ class _WorldFogPageState extends State<WorldFogPage> {
                               }
                             }
 
-                            // Renk ve opacity hesaplama
+                            // Renk ve opacity hesaplama - opacity sabit kalır, sadece renk değişir
                             final color = _getColorForFrequency(nearbyCount);
-                            final baseOpacity = (0.2 + (nearbyCount * 0.08)).clamp(0.15, 0.7);
+                            final baseOpacity = _areaOpacity; // Kullanıcı ayarından sabit opacity
 
                             // Duman bulutları için seed oluştur (tutarlı şekil için)
                             final seed = area.latitude.hashCode ^ area.longitude.hashCode;
@@ -666,8 +677,8 @@ class _WorldFogPageState extends State<WorldFogPage> {
                       if (_showPastRoutes && _pastRoutes.isNotEmpty)
                         PolylineLayer(
                           polylines: _pastRoutes.map((route) {
-                            // Her rota için farklı renk
-                            final colors = [Colors.purple.withValues(alpha: 0.6), Colors.pink.withValues(alpha: 0.6), Colors.indigo.withValues(alpha: 0.6), Colors.brown.withValues(alpha: 0.6), Colors.grey.withValues(alpha: 0.6)];
+                            // Her rota için farklı renk - mavi ile kırmızı arası gradient
+                            final colors = [Colors.blue.withValues(alpha: 0.8), Colors.indigo.withValues(alpha: 0.8), Colors.purple.withValues(alpha: 0.8), Colors.pink.withValues(alpha: 0.8), Colors.red.withValues(alpha: 0.8)];
                             final colorIndex = _pastRoutes.indexOf(route) % colors.length;
 
                             return Polyline(points: route.routePoints.map((p) => p.position).toList(), color: colors[colorIndex], strokeWidth: 2.0);

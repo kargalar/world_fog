@@ -4,9 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SettingsPage extends StatefulWidget {
   final Function(ThemeMode) onThemeChanged;
   final Function(double)? onRadiusChanged;
-  final Function(double)? onDistanceFilterChanged;
+  final Function(double)? onOpacityChanged;
 
-  const SettingsPage({super.key, required this.onThemeChanged, this.onRadiusChanged, this.onDistanceFilterChanged});
+  const SettingsPage({super.key, required this.onThemeChanged, this.onRadiusChanged, this.onOpacityChanged});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -16,7 +16,6 @@ class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentTheme = ThemeMode.system;
   double _explorationRadius = 50.0;
   double _areaOpacity = 0.3;
-  double _distanceFilter = 10.0;
 
   @override
   void initState() {
@@ -29,13 +28,11 @@ class _SettingsPageState extends State<SettingsPage> {
     final themeIndex = prefs.getInt('theme_mode') ?? 0;
     final radius = prefs.getDouble('exploration_radius') ?? 50.0;
     final opacity = prefs.getDouble('area_opacity') ?? 0.3;
-    final filter = prefs.getDouble('distance_filter') ?? 10.0;
 
     setState(() {
       _currentTheme = ThemeMode.values[themeIndex];
       _explorationRadius = radius;
       _areaOpacity = opacity;
-      _distanceFilter = filter;
     });
   }
 
@@ -65,17 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _areaOpacity = opacity;
     });
     // Ana sayfaya değişikliği bildir
-    widget.onRadiusChanged?.call(_explorationRadius); // Opacity değişikliğini de radius callback ile bildir
-  }
-
-  Future<void> _saveDistanceFilter(double filter) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('distance_filter', filter);
-    setState(() {
-      _distanceFilter = filter;
-    });
-    // Ana sayfaya değişikliği bildir
-    widget.onDistanceFilterChanged?.call(filter);
+    widget.onOpacityChanged?.call(opacity);
   }
 
   Future<void> _clearExploredAreas() async {
@@ -189,30 +176,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                   const Text('Bu ayar, bir noktanın keşfedilmiş sayılması için gereken minimum mesafeyi belirler. Daha büyük yarıçap daha geniş alanları keşfetmenizi sağlar.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 24),
-
-                  // Distance Filter Slider
-                  Text('Konum Hassasiyeti: ${_distanceFilter.toInt()} metre', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Slider(
-                    value: _distanceFilter,
-                    min: 1,
-                    max: 50,
-                    divisions: 49,
-                    label: '${_distanceFilter.toInt()}m',
-                    onChanged: (value) {
-                      setState(() {
-                        _distanceFilter = value;
-                      });
-                    },
-                    onChangeEnd: (value) {
-                      _saveDistanceFilter(value);
-                    },
-                  ),
-                  const Text('Bu ayar, konum güncellemesi için gereken minimum hareket mesafesini belirler. Düşük değerler daha hassas takip sağlar ancak daha fazla batarya tüketir.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 16),
                   Text('Keşfedilen Alanların Görünürlüğü: %${(_areaOpacity * 100).toInt()}', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
                   Slider(
                     value: _areaOpacity,
                     min: 0.05,
