@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'models/route_model.dart';
 import 'services/route_service.dart';
 import 'pages/profile_page.dart';
@@ -81,7 +83,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
   final MapController _mapController = MapController();
   LatLng? _currentPosition;
   List<LatLng> _exploredAreas = [];
-  final List<CircleMarker> _circles = [];
   StreamSubscription<Position>? _positionStream;
   bool _isTracking = false;
   bool _isPaused = false;
@@ -96,6 +97,10 @@ class _WorldFogPageState extends State<WorldFogPage> {
   double _currentRouteDistance = 0.0;
   Duration _currentRouteDuration = Duration.zero;
   Timer? _durationTimer;
+
+  // Geçmiş rotaları gösterme için değişkenler
+  bool _showPastRoutes = false;
+  List<RouteModel> _pastRoutes = [];
 
   @override
   void initState() {
@@ -157,8 +162,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
         final coords = data.split(',');
         return LatLng(double.parse(coords[0]), double.parse(coords[1]));
       }).toList();
-
-      _updateExploredCircles();
     });
   }
 
@@ -166,14 +169,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
     final prefs = await SharedPreferences.getInstance();
     final exploredData = _exploredAreas.map((area) => '${area.latitude},${area.longitude}').toList();
     await prefs.setStringList('explored_areas', exploredData);
-  }
-
-  void _updateExploredCircles() {
-    // Bu metod artık kullanılmıyor, CircleLayer dinamik olarak oluşturuluyor
-    // Sadece state'i güncellemek için setState çağrısı yapılacak
-    setState(() {
-      // Circles artık dinamik olarak oluşturulduğu için burada bir şey yapmaya gerek yok
-    });
   }
 
   void _startTracking() {
@@ -228,7 +223,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
             setState(() {
               _exploredAreas.add(newPosition);
               _currentRouteExploredAreas.add(newPosition);
-              _updateExploredCircles();
             });
             _saveExploredAreas();
           }
@@ -371,7 +365,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
             setState(() {
               _exploredAreas.add(newPosition);
               _currentRouteExploredAreas.add(newPosition);
-              _updateExploredCircles();
             });
             _saveExploredAreas();
           }
@@ -395,6 +388,26 @@ class _WorldFogPageState extends State<WorldFogPage> {
     // Başarılı kayıt mesajı
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Rota kaydedildi: $routeName'), backgroundColor: Colors.green));
+    }
+  }
+
+  Future<void> _loadPastRoutes() async {
+    try {
+      final routes = await RouteService.getSavedRoutes();
+      setState(() {
+        _pastRoutes = routes;
+      });
+    } catch (e) {
+      debugPrint('Geçmiş rotalar yüklenemedi: $e');
+    }
+  }
+
+  void _togglePastRoutes() {
+    setState(() {
+      _showPastRoutes = !_showPastRoutes;
+    });
+    if (_showPastRoutes && _pastRoutes.isEmpty) {
+      _loadPastRoutes();
     }
   }
 
@@ -469,6 +482,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(icon: const Icon(Icons.my_location), onPressed: _goToCurrentLocation, tooltip: 'Konumuma Git'),
+          IconButton(icon: Icon(_showPastRoutes ? Icons.route : Icons.route_outlined), onPressed: _togglePastRoutes, tooltip: _showPastRoutes ? 'Geçmiş Rotaları Gizle' : 'Geçmiş Rotaları Göster'),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -570,35 +584,46 @@ class _WorldFogPageState extends State<WorldFogPage> {
                         userAgentPackageName: 'com.example.world_fog',
                         subdomains: const ['a', 'b', 'c', 'd'],
                       ),
-                      // Keşfedilen alanlar
-                      CircleLayer(
-                        circles: _exploredAreas.map((area) {
-                          // Çevresindeki diğer alanları say (frekans hesabı)
-                          int nearbyCount = 0;
-                          if (_exploredAreas.length < 1000) {
-                            // Performans için alan sayısı sınırlaması
+                      // Keşfedilen alanlar (Circle layer ile yumuşak geçiş)
+                      if (_exploredAreas.isNotEmpty)
+                        CircleLayer(
+                          circles: _exploredAreas.map((area) {
+                            // Yakınlık bazlı opacity hesaplama
+                            double opacity = 0.3;
+                            int nearbyCount = 0;
+
                             for (final otherArea in _exploredAreas) {
                               if (area != otherArea) {
                                 final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
-                                if (distance < _explorationRadius * 1.5) {
+                                if (distance < _explorationRadius * 2) {
                                   nearbyCount++;
                                 }
                               }
                             }
-                          }
 
-                          // Frekansa göre renk belirleme
-                          final areaColor = _getColorForFrequency(nearbyCount);
+                            // Yoğunluğa göre opacity artır
+                            opacity = (0.2 + (nearbyCount * 0.1)).clamp(0.2, 0.8);
 
-                          return CircleMarker(
-                            point: area,
-                            radius: _explorationRadius,
-                            useRadiusInMeter: true,
-                            color: areaColor.withOpacity(0.4), // Sabit opacity
-                            borderStrokeWidth: 0,
-                          );
-                        }).toList(),
-                      ),
+                            return CircleMarker(
+                              point: area,
+                              radius: _explorationRadius / 2,
+                              color: _getColorForFrequency(nearbyCount).withValues(alpha: opacity),
+                              borderColor: _getColorForFrequency(nearbyCount).withValues(alpha: opacity + 0.2),
+                              borderStrokeWidth: 2,
+                            );
+                          }).toList(),
+                        ),
+                      // Geçmiş rotalar
+                      if (_showPastRoutes && _pastRoutes.isNotEmpty)
+                        PolylineLayer(
+                          polylines: _pastRoutes.map((route) {
+                            // Her rota için farklı renk
+                            final colors = [Colors.purple.withOpacity(0.6), Colors.pink.withOpacity(0.6), Colors.indigo.withOpacity(0.6), Colors.brown.withOpacity(0.6), Colors.grey.withOpacity(0.6)];
+                            final colorIndex = _pastRoutes.indexOf(route) % colors.length;
+
+                            return Polyline(points: route.routePoints, color: colors[colorIndex], strokeWidth: 2.0);
+                          }).toList(),
+                        ),
                       // Mevcut rota çizgisi
                       if (_isTracking && _currentRoutePoints.length > 1)
                         PolylineLayer(
@@ -627,6 +652,57 @@ class _WorldFogPageState extends State<WorldFogPage> {
                     ],
                   ),
           ),
+          // Geçmiş rotalar bilgi paneli
+          if (_showPastRoutes && _pastRoutes.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2D2D2D) : Colors.grey[200],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.route, size: 16),
+                      const SizedBox(width: 8),
+                      Text('Geçmiş Rotalar (${_pastRoutes.length})', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _pastRoutes.length,
+                      itemBuilder: (context, index) {
+                        final route = _pastRoutes[index];
+                        final colors = [Colors.purple, Colors.pink, Colors.indigo, Colors.brown, Colors.grey];
+                        final color = colors[index % colors.length];
+
+                        return Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: color, width: 1),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                route.name.length > 15 ? '${route.name.substring(0, 15)}...' : route.name,
+                                style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold),
+                              ),
+                              Text(route.formattedDistance, style: TextStyle(fontSize: 8, color: color)),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
       floatingActionButton: _isTracking

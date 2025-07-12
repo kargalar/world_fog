@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -162,34 +163,8 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   userAgentPackageName: 'com.example.world_fog',
                   subdomains: const ['a', 'b', 'c', 'd'],
                 ),
-                // Keşfedilen alanlar
-                if (widget.route.exploredAreas.isNotEmpty)
-                  CircleLayer(
-                    circles: widget.route.exploredAreas.map((area) {
-                      // Çevresindeki diğer alanları say (frekans hesabı)
-                      int nearbyCount = 0;
-                      for (final otherArea in widget.route.exploredAreas) {
-                        if (area != otherArea) {
-                          final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
-                          if (distance < 45) {
-                            // 30m yarıçapının 1.5 katı
-                            nearbyCount++;
-                          }
-                        }
-                      }
-
-                      // Frekansa göre renk belirleme
-                      final areaColor = _getColorForFrequency(nearbyCount);
-
-                      return CircleMarker(
-                        point: area,
-                        radius: 30.0,
-                        useRadiusInMeter: true,
-                        color: areaColor.withOpacity(0.4), // Sabit opacity
-                        borderStrokeWidth: 0,
-                      );
-                    }).toList(),
-                  ),
+                // Keşfedilen alanlar (Heat map tarzı)
+                if (widget.route.exploredAreas.isNotEmpty) PolygonLayer(polygons: _createHeatmapPolygons()),
                 // Rota çizgisi
                 if (widget.route.routePoints.isNotEmpty)
                   PolylineLayer(
@@ -250,6 +225,8 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                         ),
                     ],
                   ),
+                // Heatmap için poligonlar
+                if (widget.route.exploredAreas.isNotEmpty) PolygonLayer(polygons: _createHeatmapPolygons()),
               ],
             ),
           ),
@@ -300,5 +277,53 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     ];
 
     return colors[clampedFreq];
+  }
+
+  // Route detail için hexagonal polygon noktaları oluştur
+  List<LatLng> _createHexagonPoints(LatLng center, double radius) {
+    final points = <LatLng>[];
+    const double metersPerDegree = 111320; // Yaklaşık değer
+
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * 60) * (math.pi / 180); // 60 derece aralıklarla
+      final dx = radius * math.cos(angle) / metersPerDegree;
+      final dy = radius * math.sin(angle) / metersPerDegree;
+
+      points.add(LatLng(center.latitude + dy, center.longitude + dx / math.cos(center.latitude * math.pi / 180)));
+    }
+
+    return points;
+  }
+
+  // Route detail için heatmap polygon'ları oluştur
+  List<Polygon> _createHeatmapPolygons() {
+    final polygons = <Polygon>[];
+
+    // Her keşfedilen alan için hexagonal polygon oluştur
+    for (int i = 0; i < widget.route.exploredAreas.length; i++) {
+      final area = widget.route.exploredAreas[i];
+
+      // Çevresindeki diğer alanları say
+      int frequency = 0;
+      for (final otherArea in widget.route.exploredAreas) {
+        if (area != otherArea) {
+          final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
+          if (distance < 60) {
+            // 30m yarıçapının 2 katı
+            frequency++;
+          }
+        }
+      }
+
+      // Frekansa göre renk belirleme
+      final color = _getColorForFrequency(frequency);
+
+      // Hexagonal polygon noktaları oluştur
+      final polygonPoints = _createHexagonPoints(area, 30.0);
+
+      polygons.add(Polygon(points: polygonPoints, color: color.withOpacity(0.4), borderColor: color.withOpacity(0.6), borderStrokeWidth: 1));
+    }
+
+    return polygons;
   }
 }
