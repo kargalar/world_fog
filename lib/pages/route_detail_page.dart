@@ -121,6 +121,10 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
       _currentPointIndex = 0;
       _currentSimulationTime = null;
     });
+    // Haritayı başlangıç noktasına götür
+    if (widget.route.routePoints.isNotEmpty) {
+      _mapController.move(widget.route.routePoints.first.position, _mapController.camera.zoom);
+    }
   }
 
   bool get _hasElevationData {
@@ -148,6 +152,20 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     final maxAltitude = points.map((p) => p.y).reduce((a, b) => a > b ? a : b);
     final altitudeRange = maxAltitude - minAltitude;
 
+    // Mevcut pozisyonun yüksekliğini ve mesafesini hesapla
+    double currentDistance = 0;
+    double currentAltitude = 0;
+    if (_currentPointIndex < widget.route.routePoints.length) {
+      currentAltitude = widget.route.routePoints[_currentPointIndex].altitude;
+      for (int i = 0; i < _currentPointIndex; i++) {
+        if (i > 0) {
+          final prevPoint = widget.route.routePoints[i - 1];
+          final currentPoint = widget.route.routePoints[i];
+          currentDistance += Geolocator.distanceBetween(prevPoint.position.latitude, prevPoint.position.longitude, currentPoint.position.latitude, currentPoint.position.longitude);
+        }
+      }
+    }
+
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -159,6 +177,15 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
               const Icon(Icons.terrain, color: Colors.brown, size: 12),
               const SizedBox(width: 4),
               Text('Yükseklik: ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              if (_currentPointIndex > 0) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.height, color: Colors.orange, size: 12),
+                const SizedBox(width: 2),
+                Text(
+                  '${currentAltitude.toStringAsFixed(0)}m',
+                  style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                ),
+              ],
             ],
           ),
           Expanded(
@@ -180,6 +207,12 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                 ],
                 minY: minAltitude - (altitudeRange * 0.1),
                 maxY: maxAltitude + (altitudeRange * 0.1),
+                extraLinesData: ExtraLinesData(
+                  verticalLines: [
+                    // Mevcut pozisyon için dikey çizgi
+                    if (_currentPointIndex > 0) VerticalLine(x: currentDistance / 1000, color: Colors.orange, strokeWidth: 2, dashArray: [5, 5]),
+                  ],
+                ),
               ),
             ),
           ),
@@ -265,7 +298,8 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   PolylineLayer(
                     polylines: [
                       Polyline(points: widget.route.routePoints.map((p) => p.position).toList(), color: Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue.withOpacity(0.5) : Colors.blue.withOpacity(0.5), strokeWidth: 3.0),
-                      if (_isSimulating && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
+                      // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
+                      if ((_isSimulating || _currentPointIndex > 0) && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
                     ],
                   ),
                 // Başlangıç ve bitiş noktaları
@@ -299,7 +333,8 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                             child: const Icon(Icons.stop, color: Colors.white, size: 16),
                           ),
                         ),
-                      if (_isSimulating && _currentPointIndex < widget.route.routePoints.length)
+                      // Mevcut pozisyon markeri - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
+                      if ((_isSimulating || _currentPointIndex > 0) && _currentPointIndex < widget.route.routePoints.length)
                         Marker(
                           point: widget.route.routePoints[_currentPointIndex].position,
                           width: 32,
