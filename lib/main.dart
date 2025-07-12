@@ -86,16 +86,19 @@ class _WorldFogPageState extends State<WorldFogPage> {
   bool _isTracking = false;
   bool _isPaused = false;
   double _explorationRadius = 50.0; // Varsayılan 50 metre yarıçap (ayarlardan 1km'ye kadar çıkarılabilir)
+  double _distanceFilter = 10.0; // Konum güncellemesi için minimum mesafe (metre)
 
   // Rota takibi için yeni değişkenler
-  final List<LatLng> _currentRoutePoints = [];
+  final List<RoutePoint> _currentRoutePoints = [];
   final List<LatLng> _currentRouteExploredAreas = [];
   DateTime? _routeStartTime;
   DateTime? _pauseStartTime;
   Duration _totalPausedTime = Duration.zero;
+  Duration _currentBreakDuration = Duration.zero;
   double _currentRouteDistance = 0.0;
   Duration _currentRouteDuration = Duration.zero;
   Timer? _durationTimer;
+  Timer? _breakTimer;
 
   // Geçmiş rotaları gösterme için değişkenler
   bool _showPastRoutes = false;
@@ -118,8 +121,10 @@ class _WorldFogPageState extends State<WorldFogPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final radius = prefs.getDouble('exploration_radius') ?? 50.0;
+    final filter = prefs.getDouble('distance_filter') ?? 10.0;
     setState(() {
       _explorationRadius = radius;
+      _distanceFilter = filter;
     });
   }
 
@@ -180,12 +185,19 @@ class _WorldFogPageState extends State<WorldFogPage> {
       _currentRouteDistance = 0.0;
       _currentRouteDuration = Duration.zero;
       _totalPausedTime = Duration.zero;
+      _currentBreakDuration = Duration.zero;
       _currentRoutePoints.clear();
       _currentRouteExploredAreas.clear();
 
       // Başlangıç noktasını ekle
       if (_currentPosition != null) {
-        _currentRoutePoints.add(_currentPosition!);
+        _currentRoutePoints.add(
+          RoutePoint(
+            position: _currentPosition!,
+            altitude: 0.0, // İlk nokta için varsayılan yükseklik
+            timestamp: DateTime.now(),
+          ),
+        );
       }
     });
 
@@ -202,6 +214,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
 
   void _stopTracking() {
     _durationTimer?.cancel();
+    _breakTimer?.cancel();
 
     // Rotayı kaydet
     if (_routeStartTime != null && _currentRoutePoints.isNotEmpty) {
@@ -245,6 +258,16 @@ class _WorldFogPageState extends State<WorldFogPage> {
                 Text(_formatDuration(_currentRouteDuration)),
               ],
             ),
+            if (_currentBreakDuration.inSeconds > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.coffee, size: 16, color: Colors.orange[600]),
+                  const SizedBox(width: 4),
+                  Text('Mola Süresi: ${_formatDuration(_currentBreakDuration)}'),
+                ],
+              ),
+            ],
           ],
         ),
         actions: [
@@ -281,6 +304,15 @@ class _WorldFogPageState extends State<WorldFogPage> {
     setState(() {
       _isPaused = true;
       _pauseStartTime = DateTime.now();
+
+      // Mola timer'ını başlat
+      _breakTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_isPaused) {
+          setState(() {
+            _currentBreakDuration = _currentBreakDuration + const Duration(seconds: 1);
+          });
+        }
+      });
     });
   }
 
@@ -289,6 +321,10 @@ class _WorldFogPageState extends State<WorldFogPage> {
     if (_pauseStartTime != null) {
       _totalPausedTime += DateTime.now().difference(_pauseStartTime!);
     }
+
+    // Mola timer'ını durdur
+    _breakTimer?.cancel();
+    _breakTimer = null;
 
     setState(() {
       _isPaused = false;
@@ -312,7 +348,17 @@ class _WorldFogPageState extends State<WorldFogPage> {
     final routeId = DateTime.now().millisecondsSinceEpoch.toString();
     final routeName = customName ?? 'Rota ${_formatDateTime(_routeStartTime!)}';
 
-    final route = RouteModel(id: routeId, name: routeName, startTime: _routeStartTime!, endTime: DateTime.now(), routePoints: List.from(_currentRoutePoints), totalDistance: _currentRouteDistance, totalDuration: _currentRouteDuration, exploredAreas: List.from(_currentRouteExploredAreas));
+    final route = RouteModel(
+      id: routeId,
+      name: routeName,
+      startTime: _routeStartTime!,
+      endTime: DateTime.now(),
+      routePoints: List.from(_currentRoutePoints),
+      totalDistance: _currentRouteDistance,
+      totalDuration: _currentRouteDuration,
+      totalBreakTime: _currentBreakDuration,
+      exploredAreas: List.from(_currentRouteExploredAreas),
+    );
 
     await RouteService.saveRoute(route);
 
@@ -431,7 +477,6 @@ class _WorldFogPageState extends State<WorldFogPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('World Fog - Keşif Haritası'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(icon: const Icon(Icons.my_location), onPressed: _goToCurrentLocation, tooltip: 'Konumuma Git'),
@@ -455,6 +500,14 @@ class _WorldFogPageState extends State<WorldFogPage> {
                       setState(() {
                         _explorationRadius = newRadius;
                       });
+                    },
+                    onDistanceFilterChanged: (newFilter) {
+                      setState(() {
+                        _distanceFilter = newFilter;
+                      });
+                      // Konum takibini yeniden başlat
+                      _positionStream?.cancel();
+                      _startLocationTracking();
                     },
                   ),
                 ),
@@ -518,6 +571,16 @@ class _WorldFogPageState extends State<WorldFogPage> {
                           ),
                         ],
                       ),
+                      if (_currentBreakDuration.inSeconds > 0)
+                        Column(
+                          children: [
+                            const Text('Mola', style: TextStyle(fontSize: 12)),
+                            Text(
+                              _formatDuration(_currentBreakDuration),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ],
@@ -573,13 +636,19 @@ class _WorldFogPageState extends State<WorldFogPage> {
                             final colors = [Colors.purple.withValues(alpha: 0.6), Colors.pink.withValues(alpha: 0.6), Colors.indigo.withValues(alpha: 0.6), Colors.brown.withValues(alpha: 0.6), Colors.grey.withValues(alpha: 0.6)];
                             final colorIndex = _pastRoutes.indexOf(route) % colors.length;
 
-                            return Polyline(points: route.routePoints, color: colors[colorIndex], strokeWidth: 2.0);
+                            return Polyline(points: route.routePoints.map((p) => p.position).toList(), color: colors[colorIndex], strokeWidth: 2.0);
                           }).toList(),
                         ),
                       // Mevcut rota çizgisi
                       if (_isTracking && _currentRoutePoints.length > 1)
                         PolylineLayer(
-                          polylines: [Polyline(points: _currentRoutePoints, color: _isPaused ? (Theme.of(context).brightness == Brightness.dark ? Colors.orange.shade300 : Colors.orange) : (Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue : Colors.blue), strokeWidth: 4.0)],
+                          polylines: [
+                            Polyline(
+                              points: _currentRoutePoints.map((p) => p.position).toList(),
+                              color: _isPaused ? (Theme.of(context).brightness == Brightness.dark ? Colors.orange.shade300 : Colors.orange) : (Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue : Colors.blue),
+                              strokeWidth: 4.0,
+                            ),
+                          ],
                         ),
                       // Mevcut konum
                       if (_currentPosition != null)
@@ -675,9 +744,9 @@ class _WorldFogPageState extends State<WorldFogPage> {
   void _startLocationTracking() {
     _positionStream =
         Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
+          locationSettings: LocationSettings(
             accuracy: LocationAccuracy.high,
-            distanceFilter: 10, // 10 metre hareket gerekli
+            distanceFilter: _distanceFilter.toInt(), // Kullanıcı tarafından ayarlanabilir
           ),
         ).listen((Position position) {
           final newPosition = LatLng(position.latitude, position.longitude);
@@ -692,12 +761,12 @@ class _WorldFogPageState extends State<WorldFogPage> {
             // Mesafe hesapla
             if (_currentRoutePoints.isNotEmpty) {
               final lastPoint = _currentRoutePoints.last;
-              final distance = Geolocator.distanceBetween(lastPoint.latitude, lastPoint.longitude, newPosition.latitude, newPosition.longitude);
+              final distance = Geolocator.distanceBetween(lastPoint.position.latitude, lastPoint.position.longitude, newPosition.latitude, newPosition.longitude);
               _currentRouteDistance += distance;
             }
 
-            // Yeni noktayı rotaya ekle
-            _currentRoutePoints.add(newPosition);
+            // Yeni noktayı rotaya ekle (yükseklik bilgisi ile)
+            _currentRoutePoints.add(RoutePoint(position: newPosition, altitude: position.altitude, timestamp: DateTime.now()));
 
             // Yeni alan keşfedildi mi kontrol et
             if (_isNewAreaExplored(newPosition)) {
@@ -715,6 +784,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
   void dispose() {
     _positionStream?.cancel();
     _durationTimer?.cancel();
+    _breakTimer?.cancel();
     super.dispose();
   }
 }

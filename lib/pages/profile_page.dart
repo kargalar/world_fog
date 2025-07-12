@@ -133,10 +133,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.blue,
-                            child: Text('${index + 1}', style: const TextStyle(color: Colors.white)),
-                          ),
                           title: Text(route.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,12 +150,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Text(route.formattedDuration),
                                 ],
                               ),
+                              if (route.totalBreakTime.inSeconds > 0) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.coffee, size: 16, color: Colors.orange[600]),
+                                    const SizedBox(width: 4),
+                                    Text('Mola: ${route.formattedBreakTime}'),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(icon: const Icon(Icons.edit), onPressed: () => _editRouteName(route)),
+                              IconButton(icon: const Icon(Icons.edit), onPressed: () => _editRouteName(route), padding: const EdgeInsets.all(0)),
                               IconButton(
                                 icon: const Icon(Icons.visibility),
                                 onPressed: () {

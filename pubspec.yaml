@@ -40,6 +40,7 @@ dependencies:
   permission_handler: ^11.3.1
   shared_preferences: ^2.3.2
   flutter_map_heatmap: ^0.0.8
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:
