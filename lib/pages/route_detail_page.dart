@@ -135,6 +135,36 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     return widget.route.routePoints.any((point) => point.altitude > 0);
   }
 
+  // Toplam çıkış mesafesini hesapla
+  double get _totalAscent {
+    if (!_hasElevationData || widget.route.routePoints.length < 2) return 0.0;
+
+    double ascent = 0.0;
+    for (int i = 1; i < widget.route.routePoints.length; i++) {
+      final prevAltitude = widget.route.routePoints[i - 1].altitude;
+      final currentAltitude = widget.route.routePoints[i].altitude;
+      if (currentAltitude > prevAltitude) {
+        ascent += (currentAltitude - prevAltitude);
+      }
+    }
+    return ascent;
+  }
+
+  // Toplam iniş mesafesini hesapla
+  double get _totalDescent {
+    if (!_hasElevationData || widget.route.routePoints.length < 2) return 0.0;
+
+    double descent = 0.0;
+    for (int i = 1; i < widget.route.routePoints.length; i++) {
+      final prevAltitude = widget.route.routePoints[i - 1].altitude;
+      final currentAltitude = widget.route.routePoints[i].altitude;
+      if (currentAltitude < prevAltitude) {
+        descent += (prevAltitude - currentAltitude);
+      }
+    }
+    return descent;
+  }
+
   Widget _buildElevationChart() {
     if (!_hasElevationData) {
       return const SizedBox.shrink();
@@ -171,7 +201,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     }
 
     return Container(
-      height: 60,
+      height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,6 +222,27 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
               ],
             ],
           ),
+          // İniş ve çıkış bilgisi
+          if (_hasElevationData) ...[
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                const Icon(Icons.trending_up, color: Colors.green, size: 12),
+                const SizedBox(width: 2),
+                Text(
+                  '↗ ${_totalAscent.toStringAsFixed(0)}m',
+                  style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.trending_down, color: Colors.red, size: 12),
+                const SizedBox(width: 2),
+                Text(
+                  '↘ ${_totalDescent.toStringAsFixed(0)}m',
+                  style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
           Expanded(
             child: LineChart(
               LineChartData(
@@ -247,6 +298,11 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     _buildCompactInfo('${widget.route.exploredAreas.length}', Icons.location_on, Colors.orange),
                   ],
                 ),
+                // İniş/Çıkış bilgileri (sadece yükseklik verisi varsa)
+                if (_hasElevationData) ...[
+                  const SizedBox(height: 4),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [_buildCompactInfo('↗ ${_totalAscent.toStringAsFixed(0)}m', Icons.trending_up, Colors.green), _buildCompactInfo('↘ ${_totalDescent.toStringAsFixed(0)}m', Icons.trending_down, Colors.red)]),
+                ],
                 // Simülasyon kontrolü
                 if (widget.route.routePoints.isNotEmpty) ...[
                   const SizedBox(height: 8),
