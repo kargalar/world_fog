@@ -431,18 +431,18 @@ class _WorldFogPageState extends State<WorldFogPage> {
   }
 
   Color _getColorForFrequency(int frequency) {
-    // Gradient renk paleti: Mavi (az) -> Yeşil -> Sarı -> Turuncu -> Kırmızı (çok)
+    // Duman efekti için gradient renk paleti: Açık mavi (az) -> Koyu mavi/mor (çok)
     final colors = [
-      Colors.blue, // 0 kez
-      Colors.lightBlue, // 1 kez
-      Colors.cyan, // 2 kez
-      Colors.teal, // 3 kez
-      Colors.green, // 4 kez
-      Colors.lightGreen, // 5 kez
-      Colors.yellow, // 6 kez
-      Colors.orange, // 7 kez
-      Colors.deepOrange, // 8 kez
-      Colors.red, // 9+ kez
+      Colors.lightBlue.shade100, // 0 kez - çok açık mavi
+      Colors.lightBlue.shade200, // 1 kez
+      Colors.lightBlue.shade300, // 2 kez
+      Colors.blue.shade300, // 3 kez
+      Colors.blue.shade400, // 4 kez
+      Colors.blue.shade500, // 5 kez
+      Colors.blue.shade600, // 6 kez
+      Colors.indigo.shade400, // 7 kez
+      Colors.indigo.shade600, // 8 kez
+      Colors.purple.shade600, // 9+ kez - koyu mor
     ];
 
     // Frekansı array boyutuna göre sınırla
@@ -450,27 +450,63 @@ class _WorldFogPageState extends State<WorldFogPage> {
     return colors[clampedFreq];
   }
 
-  // Coğrafi daire polygon noktaları oluştur
-  List<LatLng> _createCirclePoints(LatLng center, double radiusInMeters) {
-    const int numPoints = 32; // Daire için nokta sayısı
+  // Duman efekti için yumuşak şekil polygon noktaları oluştur
+  List<LatLng> _createSmokeCloudPoints(LatLng center, double radiusInMeters, int seed) {
+    const int numPoints = 24; // Daha az nokta ile yumuşak şekil
     final List<LatLng> points = [];
+    final Random random = Random(seed); // Tutarlı şekil için seed kullan
 
     // Metre cinsinden coğrafi koordinatlara dönüştürme
-    // Yaklaşık değerler (enlemde 1 derece = 111320 metre)
     const double metersPerDegreeLat = 111320.0;
     final double metersPerDegreeLng = 111320.0 * cos(center.latitude * pi / 180);
 
-    final double deltaLat = radiusInMeters / metersPerDegreeLat;
-    final double deltaLng = radiusInMeters / metersPerDegreeLng;
-
     for (int i = 0; i < numPoints; i++) {
       final double angle = (i * 2 * pi) / numPoints;
-      final double lat = center.latitude + deltaLat * sin(angle);
-      final double lng = center.longitude + deltaLng * cos(angle);
+
+      // Duman efekti için rastgele varyasyon ekle
+      final double radiusVariation = 0.7 + (random.nextDouble() * 0.6); // %70-130 arası varyasyon
+      final double angleVariation = angle + (random.nextDouble() - 0.5) * 0.3; // Açıda küçük varyasyon
+
+      final double effectiveRadius = radiusInMeters * radiusVariation;
+      final double effectiveDeltaLat = effectiveRadius / metersPerDegreeLat;
+      final double effectiveDeltaLng = effectiveRadius / metersPerDegreeLng;
+
+      final double lat = center.latitude + effectiveDeltaLat * sin(angleVariation);
+      final double lng = center.longitude + effectiveDeltaLng * cos(angleVariation);
       points.add(LatLng(lat, lng));
     }
 
     return points;
+  }
+
+  // Çoklu duman bulutları için farklı boyutlarda şekiller oluştur
+  List<Polygon> _createMultiLayerSmoke(LatLng center, double radiusInMeters, Color baseColor, double baseOpacity, int seed) {
+    final List<Polygon> smokeLayers = [];
+
+    // 3 katmanlı duman efekti
+    for (int layer = 0; layer < 3; layer++) {
+      final double layerRadius = radiusInMeters * (0.6 + (layer * 0.3)); // Her katman biraz daha büyük
+      final double layerOpacity = baseOpacity * (1.0 - (layer * 0.25)); // Her katman biraz daha şeffaf
+      final int layerSeed = seed + layer * 100;
+
+      // Katman için hafif renk varyasyonu
+      Color layerColor = baseColor;
+      if (layer > 0) {
+        final int colorShift = 10 + (layer * 5);
+        layerColor = Color.fromARGB(baseColor.alpha, (baseColor.red + colorShift).clamp(0, 255), (baseColor.green + colorShift).clamp(0, 255), (baseColor.blue + colorShift).clamp(0, 255));
+      }
+
+      smokeLayers.add(
+        Polygon(
+          points: _createSmokeCloudPoints(center, layerRadius, layerSeed),
+          color: layerColor.withValues(alpha: layerOpacity),
+          borderColor: Colors.transparent,
+          borderStrokeWidth: 0,
+        ),
+      );
+    }
+
+    return smokeLayers;
   }
 
   @override
@@ -600,10 +636,10 @@ class _WorldFogPageState extends State<WorldFogPage> {
                         userAgentPackageName: 'com.example.world_fog',
                         subdomains: const ['a', 'b', 'c', 'd'],
                       ),
-                      // Keşfedilen alanlar (Coğrafi alan boyutunu koruyan sis efekti)
+                      // Keşfedilen alanlar (Duman efekti)
                       if (_exploredAreas.isNotEmpty)
                         PolygonLayer(
-                          polygons: _exploredAreas.map((area) {
+                          polygons: _exploredAreas.expand((area) {
                             // Yakınlık bazlı yoğunluk hesaplama
                             int nearbyCount = 0;
                             for (final otherArea in _exploredAreas) {
@@ -617,15 +653,13 @@ class _WorldFogPageState extends State<WorldFogPage> {
 
                             // Renk ve opacity hesaplama
                             final color = _getColorForFrequency(nearbyCount);
-                            final opacity = (0.15 + (nearbyCount * 0.05)).clamp(0.1, 0.6);
+                            final baseOpacity = (0.2 + (nearbyCount * 0.08)).clamp(0.15, 0.7);
 
-                            // Coğrafi alan için daire polygon oluştur
-                            return Polygon(
-                              points: _createCirclePoints(area, _explorationRadius),
-                              color: color.withValues(alpha: opacity),
-                              borderColor: Colors.transparent,
-                              borderStrokeWidth: 0,
-                            );
+                            // Duman bulutları için seed oluştur (tutarlı şekil için)
+                            final seed = area.latitude.hashCode ^ area.longitude.hashCode;
+
+                            // Çoklu katmanlı duman efekti oluştur
+                            return _createMultiLayerSmoke(area, _explorationRadius, color, baseOpacity, seed);
                           }).toList(),
                         ),
                       // Geçmiş rotalar
