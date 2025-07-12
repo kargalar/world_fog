@@ -18,6 +18,7 @@ class RouteDetailPage extends StatefulWidget {
 
 class _RouteDetailPageState extends State<RouteDetailPage> {
   bool _isSimulating = false;
+  bool _isPaused = false;
   int _currentPointIndex = 0;
   Timer? _simulationTimer;
   DateTime? _currentSimulationTime;
@@ -42,14 +43,17 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
 
     setState(() {
       _isSimulating = true;
-      _currentPointIndex = 0;
+      _isPaused = false;
+      if (_currentPointIndex == 0) {
+        _currentPointIndex = 0;
+      }
     });
 
     final startTime = widget.route.startTime;
     _currentSimulationTime = startTime;
 
     _simulationTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (_currentPointIndex < widget.route.routePoints.length - 1 && !_isSliderControlling) {
+      if (_currentPointIndex < widget.route.routePoints.length - 1 && !_isSliderControlling && !_isPaused) {
         setState(() {
           _currentPointIndex++;
           _sliderValue = _currentPointIndex / (widget.route.routePoints.length - 1);
@@ -61,9 +65,21 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         });
 
         _mapController.move(widget.route.routePoints[_currentPointIndex].position, _mapController.camera.zoom);
-      } else if (!_isSliderControlling) {
+      } else if (!_isSliderControlling && _currentPointIndex >= widget.route.routePoints.length - 1) {
         _stopSimulation();
       }
+    });
+  }
+
+  void _pauseSimulation() {
+    setState(() {
+      _isPaused = true;
+    });
+  }
+
+  void _resumeSimulation() {
+    setState(() {
+      _isPaused = false;
     });
   }
 
@@ -71,6 +87,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     _simulationTimer?.cancel();
     setState(() {
       _isSimulating = false;
+      _isPaused = false;
       _sliderValue = 0.0;
       _currentPointIndex = 0;
       _currentSimulationTime = null;
@@ -111,19 +128,6 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     });
     if (_isSimulating) {
       _startSimulation();
-    }
-  }
-
-  void _resetSimulation() {
-    _stopSimulation();
-    setState(() {
-      _sliderValue = 0.0;
-      _currentPointIndex = 0;
-      _currentSimulationTime = null;
-    });
-    // Haritayı başlangıç noktasına götür
-    if (widget.route.routePoints.isNotEmpty) {
-      _mapController.move(widget.route.routePoints.first.position, _mapController.camera.zoom);
     }
   }
 
@@ -177,7 +181,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
               const Icon(Icons.terrain, color: Colors.brown, size: 12),
               const SizedBox(width: 4),
               Text('Yükseklik: ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-              if (_currentPointIndex > 0) ...[
+              if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) ...[
                 const SizedBox(width: 8),
                 const Icon(Icons.height, color: Colors.orange, size: 12),
                 const SizedBox(width: 2),
@@ -210,7 +214,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                 extraLinesData: ExtraLinesData(
                   verticalLines: [
                     // Mevcut pozisyon için dikey çizgi
-                    if (_currentPointIndex > 0) VerticalLine(x: currentDistance / 1000, color: Colors.orange, strokeWidth: 2, dashArray: [5, 5]),
+                    if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) VerticalLine(x: currentDistance / 1000, color: Colors.orange, strokeWidth: 2, dashArray: [5, 5]),
                   ],
                 ),
               ),
@@ -249,10 +253,14 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   Row(
                     children: [
                       // Simülasyon butonları
-                      IconButton(onPressed: _isSimulating ? null : _startSimulation, icon: const Icon(Icons.play_arrow), color: Colors.green, iconSize: 20),
-                      IconButton(onPressed: _isSimulating ? _stopSimulation : null, icon: const Icon(Icons.pause), color: Colors.orange, iconSize: 20),
-                      IconButton(onPressed: (_isSimulating || _currentPointIndex > 0) ? _resetSimulation : null, icon: const Icon(Icons.refresh), color: Colors.red, iconSize: 20),
-                      const SizedBox(width: 8),
+                      if (!_isSimulating)
+                        IconButton(onPressed: _startSimulation, icon: const Icon(Icons.play_arrow), color: Colors.green, iconSize: 20)
+                      else if (_isPaused)
+                        IconButton(onPressed: _resumeSimulation, icon: const Icon(Icons.play_arrow), color: Colors.green, iconSize: 20)
+                      else
+                        IconButton(onPressed: _pauseSimulation, icon: const Icon(Icons.pause), color: Colors.orange, iconSize: 20),
+
+                      IconButton(onPressed: _isSimulating ? _stopSimulation : null, icon: const Icon(Icons.stop), color: Colors.red, iconSize: 20),
                       // Slider
                       Expanded(
                         child: Column(
@@ -299,7 +307,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     polylines: [
                       Polyline(points: widget.route.routePoints.map((p) => p.position).toList(), color: Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue.withOpacity(0.5) : Colors.blue.withOpacity(0.5), strokeWidth: 3.0),
                       // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
-                      if ((_isSimulating || _currentPointIndex > 0) && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
+                      if ((_isSimulating || _sliderValue > 0) && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
                     ],
                   ),
                 // Başlangıç ve bitiş noktaları
@@ -334,7 +342,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                           ),
                         ),
                       // Mevcut pozisyon markeri - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
-                      if ((_isSimulating || _currentPointIndex > 0) && _currentPointIndex < widget.route.routePoints.length)
+                      if ((_isSimulating || _sliderValue > 0) && _currentPointIndex < widget.route.routePoints.length)
                         Marker(
                           point: widget.route.routePoints[_currentPointIndex].position,
                           width: 32,
