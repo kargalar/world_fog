@@ -92,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil - Rota Geçmişi'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(title: const Text('Rota Geçmişi'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _routes.isEmpty

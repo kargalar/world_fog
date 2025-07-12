@@ -10,69 +10,27 @@ import 'models/route_model.dart';
 import 'services/route_service.dart';
 import 'pages/profile_page.dart';
 import 'pages/settings_page.dart';
+import 'widgets/theme_provider.dart';
+import 'widgets/route_control_panel.dart';
+import 'widgets/route_stats_card.dart';
+import 'widgets/exploration_map_widget.dart';
+import 'widgets/map_control_buttons.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeIndex = prefs.getInt('theme_mode') ?? 0;
-    setState(() {
-      _themeMode = ThemeMode.values[themeIndex];
-    });
-  }
-
-  void _updateTheme(ThemeMode themeMode) {
-    setState(() {
-      _themeMode = themeMode;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'World Fog - Keşif Haritası',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.light),
-      ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1F1F1F), foregroundColor: Colors.white),
-      ),
-      themeMode: _themeMode,
-      home: WorldFogPage(onThemeChanged: _updateTheme),
-    );
+    return ThemeProvider(child: const WorldFogPage());
   }
 }
 
 class WorldFogPage extends StatefulWidget {
-  final Function(ThemeMode) onThemeChanged;
-
-  const WorldFogPage({super.key, required this.onThemeChanged});
+  const WorldFogPage({super.key});
 
   @override
   State<WorldFogPage> createState() => _WorldFogPageState();
@@ -550,7 +508,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => SettingsPage(
-                    onThemeChanged: widget.onThemeChanged,
+                    onThemeChanged: (themeMode) => ThemeHelper.updateTheme(context, themeMode),
                     onRadiusChanged: (newRadius) async {
                       setState(() {
                         _explorationRadius = newRadius;
