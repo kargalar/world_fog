@@ -11,13 +11,26 @@ class WorldFogApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LocationViewModel()),
-        ChangeNotifierProvider(create: (_) => MapViewModel()),
-        ChangeNotifierProvider(create: (_) => RouteViewModel()),
-      ],
-      child: const AppInitializer(),
+    return MaterialApp(
+      title: 'World Fog',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => LocationViewModel()),
+          ChangeNotifierProvider(create: (_) => MapViewModel()),
+          ChangeNotifierProvider(create: (_) => RouteViewModel()),
+        ],
+        child: const AppInitializer(),
+      ),
     );
   }
 }
@@ -56,8 +69,9 @@ class _AppInitializerState extends State<AppInitializer> {
         // İlk konumu al
         await locationVM.getCurrentLocation();
 
-        // Haritayı mevcut konuma odakla
+        // Haritayı mevcut konuma odakla (MapController hazır olduğunda)
         if (locationVM.hasLocation) {
+          // MapController henüz hazır olmayabilir, sadece state'i güncelle
           mapVM.updateMapCenter(locationVM.currentPosition!);
         }
       } else {
@@ -115,20 +129,7 @@ class _AppInitializerState extends State<AppInitializer> {
       );
     }
 
-    return MaterialApp(
-      title: 'World Fog',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.system,
-      home: const HomePage(),
-    );
+    return const HomePage();
   }
 }
 

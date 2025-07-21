@@ -80,7 +80,14 @@ class MapViewModel extends ChangeNotifier {
   void updateMapCenter(LatLng center, {double? zoom}) {
     _mapState = _mapState.copyWith(center: center, zoom: zoom ?? _mapState.zoom);
 
-    _mapController.move(center, _mapState.zoom);
+    // MapController'ı sadece harita render edildikten sonra kullan
+    try {
+      _mapController.move(center, _mapState.zoom);
+    } catch (e) {
+      // MapController henüz hazır değil, sadece state'i güncelle
+      debugPrint('MapController henüz hazır değil: $e');
+    }
+
     notifyListeners();
   }
 
@@ -88,7 +95,11 @@ class MapViewModel extends ChangeNotifier {
   void updateMapZoom(double zoom) {
     _mapState = _mapState.copyWith(zoom: zoom);
     if (_mapState.center != null) {
-      _mapController.move(_mapState.center!, zoom);
+      try {
+        _mapController.move(_mapState.center!, zoom);
+      } catch (e) {
+        debugPrint('MapController henüz hazır değil: $e');
+      }
     }
     notifyListeners();
   }
@@ -97,7 +108,11 @@ class MapViewModel extends ChangeNotifier {
   void updateMapRotation(double rotation) {
     _mapState = _mapState.copyWith(rotation: rotation);
     if (_mapState.center != null) {
-      _mapController.moveAndRotate(_mapState.center!, _mapState.zoom, rotation);
+      try {
+        _mapController.moveAndRotate(_mapState.center!, _mapState.zoom, rotation);
+      } catch (e) {
+        debugPrint('MapController henüz hazır değil: $e');
+      }
     }
     notifyListeners();
   }
@@ -131,10 +146,14 @@ class MapViewModel extends ChangeNotifier {
     _mapState = _mapState.copyWith(center: location.position);
 
     if (_mapState.isFollowingLocation) {
-      if (location.bearing != null) {
-        _mapController.moveAndRotate(location.position, _mapState.zoom, -location.bearing!);
-      } else {
-        _mapController.move(location.position, _mapState.zoom);
+      try {
+        if (location.bearing != null) {
+          _mapController.moveAndRotate(location.position, _mapState.zoom, -location.bearing!);
+        } else {
+          _mapController.move(location.position, _mapState.zoom);
+        }
+      } catch (e) {
+        debugPrint('MapController henüz hazır değil: $e');
       }
     }
 

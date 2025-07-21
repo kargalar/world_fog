@@ -10,7 +10,6 @@ import '../widgets/route_stats_card.dart';
 import '../widgets/world_fog_app.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
-import '../widgets/theme_provider.dart';
 
 /// Ana sayfa widget'ı
 class HomePage extends StatefulWidget {
@@ -262,7 +261,14 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SettingsPage(onThemeChanged: (themeMode) => ThemeHelper.updateTheme(context, themeMode), onRadiusChanged: (newRadius) => mapVM.updateExplorationRadius(newRadius), onOpacityChanged: (newOpacity) => mapVM.updateAreaOpacity(newOpacity)),
+        builder: (context) => SettingsPage(
+          onThemeChanged: (themeMode) {
+            // Tema değişikliği artık MaterialApp seviyesinde yapılmıyor
+            // İleride gerekirse burada tema state'i güncellenebilir
+          },
+          onRadiusChanged: (newRadius) => mapVM.updateExplorationRadius(newRadius),
+          onOpacityChanged: (newOpacity) => mapVM.updateAreaOpacity(newOpacity),
+        ),
       ),
     );
   }
