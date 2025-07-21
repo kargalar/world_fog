@@ -99,32 +99,109 @@ class _WorldFogPageState extends State<WorldFogPage> {
   }
 
   Future<void> _requestPermissions() async {
-    final locationPermission = await Permission.location.request();
-    if (locationPermission.isDenied) {
-      _showPermissionDialog();
+    // Önce konum servisinin açık olup olmadığını kontrol et
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showLocationServiceDialog();
+      return;
     }
+
+    // Mevcut izin durumunu kontrol et
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        _showPermissionDialog('Konum izni reddedildi. Lütfen ayarlardan konum iznini açın.');
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      _showPermissionDialog('Konum izni kalıcı olarak reddedildi. Lütfen ayarlardan konum iznini açın.');
+      return;
+    }
+
+    // İzin alındı, konum takibini başlat
+    debugPrint('Konum izni alındı: $permission');
   }
 
-  void _showPermissionDialog() {
+  void _showLocationServiceDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Konum Servisi Kapalı'),
+        content: const Text('GPS/Konum servisi kapalı. Lütfen cihazınızın konum servisini açın.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await Geolocator.openLocationSettings();
+            },
+            child: const Text('Ayarları Aç'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Konum İzni Gerekli'),
-        content: const Text('Uygulamanın çalışması için konum izni gereklidir.'),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam'))],
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await Geolocator.openAppSettings();
+            },
+            child: const Text('Ayarları Aç'),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _getCurrentLocation() async {
     try {
-      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
+      // Önce izinleri ve servisleri kontrol et
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('Konum servisi kapalı');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        debugPrint('Konum izni yok: $permission');
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10), // Timeout ekle
+        ),
+      );
+
       setState(() {
         _currentPosition = LatLng(position.latitude, position.longitude);
       });
+
       _mapController.move(_currentPosition!, 15.0);
+      debugPrint('Konum alındı: ${position.latitude}, ${position.longitude}');
     } catch (e) {
       debugPrint('Konum alınamadı: $e');
+      // Kullanıcıya hata mesajı göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Konum alınamadı: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 3)));
+      }
     }
   }
 
@@ -432,50 +509,93 @@ class _WorldFogPageState extends State<WorldFogPage> {
           locationSettings: LocationSettings(
             accuracy: LocationAccuracy.high,
             distanceFilter: _distanceFilter.toInt(), // Kullanıcı tarafından ayarlanabilir
+            timeLimit: const Duration(seconds: 30), // Timeout ekle
           ),
-        ).listen((Position position) {
-          final newPosition = LatLng(position.latitude, position.longitude);
+        ).listen(
+          (Position position) {
+            final newPosition = LatLng(position.latitude, position.longitude);
 
-          // Konum her zaman güncellenir
-          setState(() {
-            _lastPosition = _currentPosition;
-            _currentPosition = newPosition;
-            if (_lastPosition != null) {
-              _currentBearing = _calculateBearing(_lastPosition!, newPosition);
-            }
-          });
-
-          if (_isFollowingLocation && _currentPosition != null) {
-            // Oto takip modunda haritayı kullanıcının yönüne göre döndür
-            if (_currentBearing != null) {
-              _mapController.moveAndRotate(_currentPosition!, _mapController.camera.zoom, -_currentBearing!);
-            } else {
-              _mapController.move(_currentPosition!, _mapController.camera.zoom);
-            }
-          }
-
-          // Sadece rota aktifken rota verilerini güncelle
-          if (_isTracking && !_isPaused) {
-            // Mesafe hesapla
-            if (_currentRoutePoints.isNotEmpty) {
-              final lastPoint = _currentRoutePoints.last;
-              final distance = Geolocator.distanceBetween(lastPoint.position.latitude, lastPoint.position.longitude, newPosition.latitude, newPosition.longitude);
-              _currentRouteDistance += distance;
-            }
-
-            // Yeni noktayı rotaya ekle (yükseklik bilgisi ile)
-            _currentRoutePoints.add(RoutePoint(position: newPosition, altitude: position.altitude, timestamp: DateTime.now()));
-
-            // Yeni alan keşfedildi mi kontrol et
-            if (_isNewAreaExplored(newPosition)) {
+            // Konum her zaman güncellenir
+            if (mounted) {
               setState(() {
-                _exploredAreas.add(newPosition);
-                _currentRouteExploredAreas.add(newPosition);
+                _lastPosition = _currentPosition;
+                _currentPosition = newPosition;
+                if (_lastPosition != null) {
+                  _currentBearing = _calculateBearing(_lastPosition!, newPosition);
+                }
               });
-              _saveExploredAreas();
+
+              if (_isFollowingLocation && _currentPosition != null) {
+                // Oto takip modunda haritayı kullanıcının yönüne göre döndür
+                if (_currentBearing != null) {
+                  _mapController.moveAndRotate(_currentPosition!, _mapController.camera.zoom, -_currentBearing!);
+                } else {
+                  _mapController.move(_currentPosition!, _mapController.camera.zoom);
+                }
+              }
+
+              // Sadece rota aktifken rota verilerini güncelle
+              if (_isTracking && !_isPaused) {
+                // Mesafe hesapla
+                if (_currentRoutePoints.isNotEmpty) {
+                  final lastPoint = _currentRoutePoints.last;
+                  final distance = Geolocator.distanceBetween(lastPoint.position.latitude, lastPoint.position.longitude, newPosition.latitude, newPosition.longitude);
+                  _currentRouteDistance += distance;
+                }
+
+                // Yeni noktayı rotaya ekle (yükseklik bilgisi ile)
+                _currentRoutePoints.add(RoutePoint(position: newPosition, altitude: position.altitude, timestamp: DateTime.now()));
+
+                // Yeni alan keşfedildi mi kontrol et
+                if (_isNewAreaExplored(newPosition)) {
+                  setState(() {
+                    _exploredAreas.add(newPosition);
+                    _currentRouteExploredAreas.add(newPosition);
+                  });
+                  _saveExploredAreas();
+                }
+              }
             }
-          }
-        });
+          },
+          onError: (error) {
+            debugPrint('Konum stream hatası: $error');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Konum takibi hatası: ${error.toString()}'), backgroundColor: Colors.orange, duration: const Duration(seconds: 3)));
+            }
+
+            // Hata durumunda stream'i yeniden başlat
+            Future.delayed(const Duration(seconds: 5), () {
+              if (mounted) {
+                _restartLocationTracking();
+              }
+            });
+          },
+          cancelOnError: false, // Hata durumunda stream'i kapatma
+        );
+  }
+
+  // Konum takibini yeniden başlat
+  void _restartLocationTracking() async {
+    debugPrint('Konum takibi yeniden başlatılıyor...');
+
+    // Önce mevcut stream'i kapat
+    await _positionStream?.cancel();
+
+    // İzinleri ve servisleri kontrol et
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('Konum servisi kapalı - yeniden başlatma iptal edildi');
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      debugPrint('Konum izni yok - yeniden başlatma iptal edildi');
+      return;
+    }
+
+    // Stream'i yeniden başlat
+    _startLocationTracking();
   }
 
   @override
@@ -486,6 +606,30 @@ class _WorldFogPageState extends State<WorldFogPage> {
     super.dispose();
   }
 
+  // Konum durumunu kontrol et ve kullanıcıya bilgi ver
+  Future<void> _checkLocationStatus() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    String statusMessage = '';
+    Color statusColor = Colors.green;
+
+    if (!serviceEnabled) {
+      statusMessage = 'GPS/Konum servisi kapalı';
+      statusColor = Colors.red;
+    } else if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      statusMessage = 'Konum izni verilmemiş';
+      statusColor = Colors.red;
+    } else {
+      statusMessage = 'Konum takibi aktif';
+      statusColor = Colors.green;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(statusMessage), backgroundColor: statusColor, duration: const Duration(seconds: 2)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -493,6 +637,7 @@ class _WorldFogPageState extends State<WorldFogPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(icon: Icon(_isFollowingLocation ? Icons.navigation : Icons.my_location), onPressed: _goToCurrentLocation, tooltip: _isFollowingLocation ? 'Otomatik Takip Kapat' : 'Konumuma Git/Otomatik Takip'),
+          IconButton(icon: const Icon(Icons.gps_fixed), onPressed: _checkLocationStatus, tooltip: 'Konum Durumunu Kontrol Et'),
           IconButton(icon: const Icon(Icons.route), onPressed: _togglePastRoutes, tooltip: _showPastRoutes ? 'Geçmiş Rotaları Gizle' : 'Geçmiş Rotaları Göster'),
           IconButton(
             icon: const Icon(Icons.person),
@@ -818,8 +963,8 @@ class _WorldFogPageState extends State<WorldFogPage> {
       polygons.add(
         Polygon(
           points: points,
-          color: layerColor.withOpacity(opacity), // Sabit opacity
-          borderColor: layerColor.withOpacity(opacity * 0.7), // Border da sabit opacity
+          color: layerColor.withValues(alpha: opacity), // Sabit opacity
+          borderColor: layerColor.withValues(alpha: opacity * 0.7), // Border da sabit opacity
           borderStrokeWidth: 0.5,
         ),
       );
