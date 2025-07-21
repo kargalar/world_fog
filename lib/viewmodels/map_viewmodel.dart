@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/app_state_model.dart';
@@ -16,6 +16,10 @@ class MapViewModel extends ChangeNotifier {
   AppSettingsModel _settings = const AppSettingsModel();
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Sıcaklık haritası için geçiş sıklığı takibi
+  final Map<String, int> _areaVisitCount = {};
+  final Map<String, DateTime> _lastVisitTime = {};
 
   // Getters
   MapController get mapController => _mapController;
@@ -160,26 +164,71 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Yeni alan keşfet
+  /// Her adımda alan keşfet (sıcaklık haritası için)
   Future<bool> exploreNewArea(LatLng position) async {
     try {
-      // Daha önce keşfedilmiş mi kontrol et
-      if (_exploredAreas.isAreaExplored(position, _settings.explorationRadius)) {
-        return false; // Zaten keşfedilmiş
-      }
+      // Pozisyonu grid sistemine çevir (daha hassas takip için)
+      final gridKey = _getGridKey(position, _settings.explorationRadius / 3);
 
-      // Yeni alanı ekle
+      // Bu alanın ziyaret sayısını artır
+      _areaVisitCount[gridKey] = (_areaVisitCount[gridKey] ?? 0) + 1;
+      _lastVisitTime[gridKey] = DateTime.now();
+
+      // Her zaman alanı ekle (sıklık takibi için)
       _exploredAreas = _exploredAreas.addArea(position);
 
-      // Storage'a kaydet
-      await _storageService.addExploredArea(position);
+      // Debug: Keşfedilen alan sayısını yazdır
+      debugPrint('🗺️ Yeni alan keşfedildi! Grid: $gridKey, Ziyaret: ${_areaVisitCount[gridKey]}, Toplam alan: ${_exploredAreas.areas.length}');
+
+      // Storage'a kaydet (her 10 adımda bir)
+      if (_areaVisitCount[gridKey]! % 10 == 1) {
+        await _storageService.addExploredArea(position);
+      }
 
       notifyListeners();
-      return true; // Yeni alan keşfedildi
+      return true; // Her zaman yeni veri eklendi
     } catch (e) {
-      _errorMessage = 'Yeni alan kaydedilemedi: $e';
+      _errorMessage = 'Alan kaydedilemedi: $e';
+      debugPrint('❌ Alan keşfi hatası: $e');
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Pozisyonu grid anahtarına çevir
+  String _getGridKey(LatLng position, double gridSize) {
+    final latGrid = (position.latitude / gridSize).floor();
+    final lngGrid = (position.longitude / gridSize).floor();
+    return '${latGrid}_$lngGrid';
+  }
+
+  /// Bir alanın ziyaret sıklığını al
+  int getVisitCount(LatLng position) {
+    final gridKey = _getGridKey(position, _settings.explorationRadius / 3);
+    return _areaVisitCount[gridKey] ?? 0;
+  }
+
+  /// Sıklığa göre renk hesapla
+  Color getHeatmapColor(LatLng position) {
+    final visitCount = getVisitCount(position);
+
+    if (visitCount == 0) return Colors.transparent;
+
+    // Sıcaklık haritası renkleri: Mavi -> Yeşil -> Sarı -> Kırmızı
+    final intensity = (visitCount / 50.0).clamp(0.0, 1.0); // Max 50 ziyaret için normalize
+
+    if (intensity < 0.25) {
+      // Mavi -> Cyan
+      return Color.lerp(Colors.blue.withValues(alpha: 0.3), Colors.cyan.withValues(alpha: 0.5), intensity * 4)!;
+    } else if (intensity < 0.5) {
+      // Cyan -> Yeşil
+      return Color.lerp(Colors.cyan.withValues(alpha: 0.5), Colors.green.withValues(alpha: 0.6), (intensity - 0.25) * 4)!;
+    } else if (intensity < 0.75) {
+      // Yeşil -> Sarı
+      return Color.lerp(Colors.green.withValues(alpha: 0.6), Colors.yellow.withValues(alpha: 0.7), (intensity - 0.5) * 4)!;
+    } else {
+      // Sarı -> Kırmızı
+      return Color.lerp(Colors.yellow.withValues(alpha: 0.7), Colors.red.withValues(alpha: 0.8), (intensity - 0.75) * 4)!;
     }
   }
 

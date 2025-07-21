@@ -256,7 +256,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     color: Colors.brown,
                     barWidth: 1,
                     isStrokeCapRound: true,
-                    belowBarData: BarAreaData(show: true, color: Colors.brown.withOpacity(0.1)),
+                    belowBarData: BarAreaData(show: true, color: Colors.brown.withAlpha(30)),
                     dotData: const FlDotData(show: false),
                   ),
                 ],
@@ -285,7 +285,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
           // Minimal kontrol paneli
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.orange.withOpacity(0.1),
+            color: Colors.orange.withAlpha(26),
             child: Column(
               children: [
                 // Temel bilgiler tek satırda
@@ -327,7 +327,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                               max: 1.0,
                               divisions: widget.route.routePoints.length > 1 ? widget.route.routePoints.length - 1 : null,
                               activeColor: Colors.orange,
-                              inactiveColor: Colors.orange.withOpacity(0.3),
+                              inactiveColor: Colors.orange.withAlpha(150),
                               onChanged: _onSliderChanged,
                               onChangeStart: _onSliderChangeStart,
                               onChangeEnd: _onSliderChangeEnd,
@@ -361,7 +361,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                 if (widget.route.routePoints.isNotEmpty)
                   PolylineLayer(
                     polylines: [
-                      Polyline(points: widget.route.routePoints.map((p) => p.position).toList(), color: Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue.withOpacity(0.5) : Colors.blue.withOpacity(0.5), strokeWidth: 3.0),
+                      Polyline(points: widget.route.routePoints.map((p) => p.position).toList(), color: Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue.withAlpha(128) : Colors.blue.withAlpha(128), strokeWidth: 3.0),
                       // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
                       if ((_isSimulating || _sliderValue > 0) && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
                     ],
@@ -480,7 +480,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
       final color = _getColorForFrequency(frequency);
       final polygonPoints = _createHexagonPoints(area, 30.0);
 
-      polygons.add(Polygon(points: polygonPoints, color: color.withOpacity(0.4), borderColor: color.withOpacity(0.6), borderStrokeWidth: 1));
+      polygons.add(Polygon(points: polygonPoints, color: color.withAlpha(80), borderColor: color.withAlpha(100), borderStrokeWidth: 1));
     }
 
     return polygons;

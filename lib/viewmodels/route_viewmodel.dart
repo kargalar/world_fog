@@ -5,12 +5,10 @@ import 'package:latlong2/latlong.dart';
 import '../models/route_model.dart';
 import '../models/location_model.dart';
 import '../services/storage_service.dart';
-import '../services/route_service.dart';
 
 /// Rota işlemlerini yöneten ViewModel
 class RouteViewModel extends ChangeNotifier {
   final StorageService _storageService = StorageService();
-  final RouteService _routeService = RouteService();
 
   // Current route state
   RouteModel? _currentRoute;

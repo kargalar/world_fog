@@ -7,12 +7,19 @@ class RouteService {
 
   static Future<List<RouteModel>> getSavedRoutes() async {
     final prefs = await SharedPreferences.getInstance();
-    final routesJson = prefs.getStringList(_routesKey) ?? [];
+    final routesString = prefs.getString(_routesKey);
 
-    return routesJson.map((routeJson) {
-      final Map<String, dynamic> routeMap = jsonDecode(routeJson);
-      return RouteModel.fromJson(routeMap);
-    }).toList();
+    if (routesString == null) {
+      return [];
+    }
+
+    try {
+      final routesJson = jsonDecode(routesString) as List<dynamic>;
+      return routesJson.map((routeJson) => RouteModel.fromJson(routeJson as Map<String, dynamic>)).toList();
+    } catch (e) {
+      // Hata durumunda boş liste döndür
+      return [];
+    }
   }
 
   static Future<void> saveRoute(RouteModel route) async {
@@ -27,8 +34,9 @@ class RouteService {
       routes.add(route);
     }
 
-    final routesJson = routes.map((route) => jsonEncode(route.toJson())).toList();
-    await prefs.setStringList(_routesKey, routesJson);
+    final routesJson = routes.map((route) => route.toJson()).toList();
+    final routesString = jsonEncode(routesJson);
+    await prefs.setString(_routesKey, routesString);
   }
 
   static Future<void> deleteRoute(String routeId) async {
@@ -37,8 +45,9 @@ class RouteService {
 
     routes.removeWhere((route) => route.id == routeId);
 
-    final routesJson = routes.map((route) => jsonEncode(route.toJson())).toList();
-    await prefs.setStringList(_routesKey, routesJson);
+    final routesJson = routes.map((route) => route.toJson()).toList();
+    final routesString = jsonEncode(routesJson);
+    await prefs.setString(_routesKey, routesString);
   }
 
   static Future<RouteModel?> getRoute(String routeId) async {

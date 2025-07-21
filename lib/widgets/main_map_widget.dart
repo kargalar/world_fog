@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+
 import 'package:provider/provider.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../models/route_model.dart';
-import 'exploration_map_widget.dart';
+
+import 'fog_painter_widget.dart';
 
 /// Ana harita widget'ı
 class MainMapWidget extends StatelessWidget {
@@ -45,21 +47,17 @@ class MainMapWidget extends StatelessWidget {
               subdomains: const ['a', 'b', 'c', 'd'],
             ),
 
-            // Keşfedilen alanlar (Duman efekti)
+            // Keşfedilen alanlar - Gerçek sis efekti
             if (mapVM.exploredAreasList.isNotEmpty)
-              ExplorationMapWidget(
-                mapController: mapVM.mapController,
-                currentPosition: currentLocation.position,
-                exploredAreas: mapVM.exploredAreasList,
-                currentRoutePoints: routeVM.currentRoutePoints,
-                currentRouteExploredAreas: routeVM.currentRouteExploredAreas,
-                pastRoutes: routeVM.pastRoutes,
-                showPastRoutes: mapVM.showPastRoutes,
-                explorationRadius: mapVM.settings.explorationRadius,
-                areaOpacity: mapVM.settings.areaOpacity,
-                isFollowingLocation: mapVM.isFollowingLocation,
-                currentBearing: currentLocation.bearing,
+              Builder(
+                builder: (context) {
+                  debugPrint('�️ Haritada ${mapVM.exploredAreasList.length} sis bulutu çiziliyor');
+                  return FogPainterWidget(exploredAreas: mapVM.exploredAreasList, explorationRadius: mapVM.settings.explorationRadius, opacity: mapVM.settings.areaOpacity, baseColor: Colors.blue, mapController: mapVM.mapController);
+                },
               ),
+
+            // Aktif rota keşif alanları - Yeşil sis efekti
+            if (routeVM.currentRouteExploredAreas.isNotEmpty) FogPainterWidget(exploredAreas: routeVM.currentRouteExploredAreas, explorationRadius: mapVM.settings.explorationRadius, opacity: mapVM.settings.areaOpacity, baseColor: Colors.green, mapController: mapVM.mapController),
 
             // Geçmiş rotalar
             if (mapVM.showPastRoutes && routeVM.pastRoutes.isNotEmpty) _buildPastRoutesLayer(routeVM.pastRoutes),

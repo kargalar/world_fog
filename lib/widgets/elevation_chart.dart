@@ -133,7 +133,7 @@ class ElevationChart extends StatelessWidget {
                     barWidth: 2,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: Colors.brown.withOpacity(0.2)),
+                    belowBarData: BarAreaData(show: true, color: Colors.brown.withAlpha(51)),
                   ),
                   // Mevcut pozisyon işaretçisi
                   if (currentPointIndex >= 0 && currentPointIndex < routePoints.length)

@@ -98,7 +98,7 @@ class _SettingsPageState extends State<SettingsPage> {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(color: color.withOpacity(0.7), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color.withAlpha(179), shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),

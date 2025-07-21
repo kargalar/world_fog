@@ -37,15 +37,18 @@ class _HomePageState extends State<HomePage> {
       if (locationVM.hasLocation) {
         final location = locationVM.currentLocation!;
 
+        // Debug: Konum güncellemesi
+        debugPrint('📍 Konum güncellendi: ${location.position.latitude}, ${location.position.longitude}');
+
         // Haritayı güncelle
         mapVM.updateMapWithLocation(location);
+
+        // Her konum güncellemesinde alan keşfi yap (sıcaklık haritası için)
+        mapVM.exploreNewArea(location.position);
 
         // Aktif rota varsa konum noktası ekle
         if (routeVM.isActive) {
           routeVM.addLocationPoint(location);
-
-          // Yeni alan keşfedildi mi kontrol et
-          mapVM.exploreNewArea(location.position);
         }
       }
     });

@@ -80,6 +80,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 await RouteService.saveRoute(updatedRoute);
                 if (mounted) _loadRoutes();
               }
+              // ignore: use_build_context_synchronously
               if (mounted) Navigator.pop(context);
             },
             child: const Text('Kaydet'),

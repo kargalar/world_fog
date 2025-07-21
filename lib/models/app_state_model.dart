@@ -6,7 +6,7 @@ class AppSettingsModel {
   final double areaOpacity;
   final double distanceFilter;
 
-  const AppSettingsModel({this.explorationRadius = 50.0, this.areaOpacity = 0.3, this.distanceFilter = 10.0});
+  const AppSettingsModel({this.explorationRadius = 100.0, this.areaOpacity = 0.7, this.distanceFilter = 10.0});
 
   AppSettingsModel copyWith({double? explorationRadius, double? areaOpacity, double? distanceFilter}) {
     return AppSettingsModel(explorationRadius: explorationRadius ?? this.explorationRadius, areaOpacity: areaOpacity ?? this.areaOpacity, distanceFilter: distanceFilter ?? this.distanceFilter);
