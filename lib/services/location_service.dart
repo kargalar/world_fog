@@ -103,9 +103,16 @@ class LocationService {
       // Mevcut stream'i kapat
       await stopLocationTracking();
 
+      // Android için foreground notification ayarla (arkaplanda konum almak için)
+      await Geolocator.requestPermission();
+
       _positionStream =
           Geolocator.getPositionStream(
-            locationSettings: LocationSettings(accuracy: accuracy, distanceFilter: distanceFilter, timeLimit: const Duration(seconds: 30)),
+            locationSettings: LocationSettings(
+              accuracy: accuracy,
+              distanceFilter: distanceFilter,
+              timeLimit: const Duration(seconds: 60), // Timeout süresini 60 saniyeye artırdık
+            ),
           ).listen(
             (Position position) {
               final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, timestamp: DateTime.now());

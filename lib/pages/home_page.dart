@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     final mapVM = context.read<MapViewModel>();
     final routeVM = context.read<RouteViewModel>();
 
-    // Listen to location updates
+    // Listen to location updates - Update map UI
     locationVM.addListener(() {
       if (locationVM.hasLocation) {
         final location = locationVM.currentLocation!;
@@ -39,16 +39,10 @@ class _HomePageState extends State<HomePage> {
         // Debug: Location update
         debugPrint('📍 Location updated: ${location.position.latitude}, ${location.position.longitude}');
 
-        // Update map
+        // Update map UI when location changes
         mapVM.updateMapWithLocation(location);
 
-        // Explore new grid on every location update
-        mapVM.exploreNewGrid(location.position);
-
-        // Add location point if active route
-        if (routeVM.isActive) {
-          routeVM.addLocationPoint(location);
-        }
+        // Grid exploration is handled in AppInitializer to work in background too
       }
     });
 

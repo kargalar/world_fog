@@ -109,7 +109,7 @@ class MainMapWidget extends StatelessWidget {
   Widget _buildPastRoutesLayer(List<RouteModel> routes) {
     return PolylineLayer(
       polylines: routes.map((route) {
-        return Polyline(points: route.routePoints.map((point) => point.position).toList(), strokeWidth: 3.0, color: Colors.grey.withValues(alpha: 0.7));
+        return Polyline(points: route.routePoints.map((point) => point.position).toList(), strokeWidth: 4.0, color: Colors.yellow);
       }).toList(),
     );
   }
@@ -117,7 +117,7 @@ class MainMapWidget extends StatelessWidget {
   /// Mevcut rotayı çizen layer
   Widget _buildCurrentRouteLayer(List<RoutePoint> routePoints) {
     return PolylineLayer(
-      polylines: [Polyline(points: routePoints.map((point) => point.position).toList(), strokeWidth: 4.0, color: Colors.red, borderStrokeWidth: 2.0, borderColor: Colors.white)],
+      polylines: [Polyline(points: routePoints.map((point) => point.position).toList(), strokeWidth: 4.0, color: Colors.red)],
     );
   }
 }
@@ -132,10 +132,10 @@ class MapControlButtons extends StatelessWidget {
       builder: (context, locationVM, mapVM, child) {
         return Positioned(
           right: 16,
-          bottom: 100,
+          bottom: 20,
           child: Column(
             children: [
-              // Konum takip butonu
+              // Location follow button
               _buildControlButton(
                 icon: mapVM.isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed,
                 onPressed: () {
@@ -148,54 +148,34 @@ class MapControlButtons extends StatelessWidget {
                 },
                 backgroundColor: mapVM.isFollowingLocation ? Colors.blue : Colors.white,
                 iconColor: mapVM.isFollowingLocation ? Colors.white : Colors.grey,
-                tooltip: 'Konumumu Takip Et',
+                tooltip: AppStrings.followMyLocation,
               ),
 
               const SizedBox(height: 8),
 
-              // Konum durumu kontrol butonu
-              _buildControlButton(icon: Icons.gps_fixed, onPressed: () => locationVM.checkLocationServiceStatus(), backgroundColor: locationVM.isLocationAvailable ? Colors.green : Colors.red, iconColor: Colors.white, tooltip: 'Konum Durumunu Kontrol Et'),
-
-              const SizedBox(height: 8),
-
-              // Geçmiş rotalar butonu
+              // Past routes button
               _buildControlButton(
                 icon: mapVM.showPastRoutes ? Icons.visibility_off : Icons.visibility,
                 onPressed: () => mapVM.togglePastRoutes(),
                 backgroundColor: mapVM.showPastRoutes ? Colors.orange : Colors.white,
                 iconColor: mapVM.showPastRoutes ? Colors.white : Colors.grey,
-                tooltip: 'Geçmiş Rotalar',
+                tooltip: AppStrings.pastRoutes,
               ),
 
               const SizedBox(height: 8),
 
-              // Mevcut konuma git butonu
-              _buildControlButton(
-                icon: Icons.my_location,
-                onPressed: () {
-                  if (locationVM.hasLocation) {
-                    mapVM.updateMapCenter(locationVM.currentPosition!, zoom: 15.0);
-                  }
-                },
-                backgroundColor: Colors.white,
-                iconColor: Colors.grey,
-                tooltip: 'Konumuma Git',
-              ),
-
-              const SizedBox(height: 8),
-
-              // Profil butonu
+              // Profile button
               _buildControlButton(
                 icon: Icons.person,
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
                 backgroundColor: Colors.white,
                 iconColor: Colors.grey,
-                tooltip: 'Profil ve Rota Geçmişi',
+                tooltip: AppStrings.profileAndRouteHistory,
               ),
 
               const SizedBox(height: 8),
 
-              // Ayarlar butonu
+              // Settings button
               _buildControlButton(
                 icon: Icons.settings,
                 onPressed: () => Navigator.push(
@@ -206,7 +186,7 @@ class MapControlButtons extends StatelessWidget {
                 ),
                 backgroundColor: Colors.white,
                 iconColor: Colors.grey,
-                tooltip: 'Ayarlar',
+                tooltip: AppStrings.settings,
               ),
             ],
           ),
@@ -227,7 +207,7 @@ class MapControlButtons extends StatelessWidget {
         child: IconButton(
           icon: Icon(icon, color: iconColor),
           onPressed: onPressed,
-          iconSize: 24,
+          iconSize: 20,
         ),
       ),
     );

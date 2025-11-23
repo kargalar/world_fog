@@ -25,7 +25,7 @@ class GridPainterWidget extends StatelessWidget {
     for (final gridKey in exploredGrids) {
       final bounds = _gridKeyToBounds(gridKey);
       if (bounds != null) {
-        polygons.add(Polygon(points: [bounds.northWest, bounds.northEast, bounds.southEast, bounds.southWest], color: Colors.blue.withValues(alpha: 0.5), borderColor: Colors.blue.withValues(alpha: 0.8), borderStrokeWidth: 1.0));
+        polygons.add(Polygon(points: [bounds.northWest, bounds.northEast, bounds.southEast, bounds.southWest], color: Colors.blue.withValues(alpha: 0.2)));
       }
     }
 

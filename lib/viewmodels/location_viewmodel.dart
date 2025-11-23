@@ -37,20 +37,35 @@ class LocationViewModel extends ChangeNotifier {
   Future<void> _initializeLocationService() async {
     try {
       // Status stream'ini dinle
-      _statusSubscription = _locationService.statusStream.listen((status) {
-        _serviceStatus = status;
-        if (status.errorMessage != null) {
-          _errorMessage = status.errorMessage;
-        }
-        notifyListeners();
-      });
+      _statusSubscription = _locationService.statusStream.listen(
+        (status) {
+          _serviceStatus = status;
+          if (status.errorMessage != null) {
+            _errorMessage = status.errorMessage;
+          }
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('Status stream hatası: $error');
+          _errorMessage = 'Konum durumu dinleme hatası: $error';
+          notifyListeners();
+        },
+      );
 
-      // Location stream'ini dinle
-      _locationSubscription = _locationService.locationStream.listen((location) {
-        _currentLocation = location;
-        _errorMessage = null; // Başarılı konum güncellemesinde hatayı temizle
-        notifyListeners();
-      });
+      // Location stream'ini dinle - Arkaplanda da çalışması için özel ayarlar
+      _locationSubscription = _locationService.locationStream.listen(
+        (location) {
+          _currentLocation = location;
+          _errorMessage = null; // Başarılı konum güncellemesinde hatayı temizle
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('Location stream hatası: $error');
+          _errorMessage = 'Konum alınamıyor: $error';
+          notifyListeners();
+        },
+        cancelOnError: false, // Stream'i kapatma, hatanın ardından devam et
+      );
 
       // İlk durum kontrolü
       await checkLocationServiceStatus();

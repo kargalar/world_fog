@@ -10,6 +10,9 @@ import '../services/storage_service.dart';
 class RouteViewModel extends ChangeNotifier {
   final StorageService _storageService = StorageService();
 
+  // Grid exploration callback - Rotanın üzerindeki gridleri keşfetmek için
+  Function(LatLng from, LatLng to)? _onRoutePointsAdded;
+
   // Current route state
   RouteModel? _currentRoute;
   bool _isTracking = false;
@@ -58,6 +61,11 @@ class RouteViewModel extends ChangeNotifier {
 
   RouteViewModel() {
     _initializeRoutes();
+  }
+
+  /// Grid keşif callback'ini ayarla
+  void setGridExplorationCallback(Function(LatLng from, LatLng to)? callback) {
+    _onRoutePointsAdded = callback;
   }
 
   /// Rotaları başlat
@@ -204,9 +212,12 @@ class RouteViewModel extends ChangeNotifier {
   void addLocationPoint(LocationModel location) {
     if (!_isTracking || _isPaused) return;
 
+    LatLng? lastPointPosition;
+
     // Mesafe hesapla
     if (_currentRoutePoints.isNotEmpty) {
       final lastPoint = _currentRoutePoints.last;
+      lastPointPosition = lastPoint.position;
       final distance = _calculateDistance(lastPoint.position, location.position);
       _currentRouteDistance += distance;
     }
@@ -219,6 +230,11 @@ class RouteViewModel extends ChangeNotifier {
         timestamp: DateTime.now(),
       ),
     );
+
+    // Rotanın üzerindeki gridleri keşfet (bir önceki noktadan mevcut noktaya kadar)
+    if (lastPointPosition != null && _onRoutePointsAdded != null) {
+      _onRoutePointsAdded!(lastPointPosition, location.position);
+    }
 
     notifyListeners();
   }

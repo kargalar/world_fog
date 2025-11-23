@@ -75,4 +75,11 @@ class AppStrings {
 
   // Elevation
   static const String elevation = 'Elevation:';
+
+  // Tooltips
+  static const String followMyLocation = 'Follow My Location';
+  static const String pastRoutes = 'Past Routes';
+  static const String goToMyLocation = 'Go to My Location';
+  static const String profileAndRouteHistory = 'Profile and Route History';
+  static const String profile = 'Profile';
 }

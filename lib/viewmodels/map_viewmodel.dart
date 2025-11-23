@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -191,6 +192,50 @@ class MapViewModel extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Rotanın üzerindeki tüm gridleri keşfet (iki nokta arasında interpolasyon yaparak)
+  Future<void> exploreRouteGrids(LatLng from, LatLng to) async {
+    try {
+      // Başlangıç ve bitiş grid'lerini al
+      final startGridKey = _getGridKey(from, _gridSizeDegrees);
+      final endGridKey = _getGridKey(to, _gridSizeDegrees);
+
+      // Başlangıç ve bitiş noktalarını keşfet
+      await exploreNewGrid(from);
+      if (startGridKey != endGridKey) {
+        await exploreNewGrid(to);
+      }
+
+      // İki nokta arasındaki interpolasyon
+      final distance = _calculateDistance(from, to);
+      if (distance > 0) {
+        // Adım sayısını hesapla (grid boyutuna göre)
+        final steps = (distance / (_gridSizeDegrees * 111320)).ceil(); // 111320m = 1 derece
+
+        for (int i = 1; i < steps; i++) {
+          // Interpolate edilen noktayı hesapla
+          final progress = i / steps;
+          final latInterpolated = from.latitude + (to.latitude - from.latitude) * progress;
+          final lngInterpolated = from.longitude + (to.longitude - from.longitude) * progress;
+          final interpolatedPoint = LatLng(latInterpolated, lngInterpolated);
+
+          // Bu grid'i keşfet
+          await exploreNewGrid(interpolatedPoint);
+        }
+      }
+    } catch (e) {
+      _errorMessage = 'Rota grid keşfi başarısız: $e';
+      debugPrint('❌ Rota keşfi hatası: $e');
+      notifyListeners();
+    }
+  }
+
+  /// İki nokta arasındaki mesafeyi hesapla (metre cinsinden - Haversine formülü)
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    const p = 0.017453292519943295; // Math.PI / 180
+    final a = 0.5 - math.cos((point2.latitude - point1.latitude) * p) / 2 + math.cos(point1.latitude * p) * math.cos(point2.latitude * p) * (1 - math.cos((point2.longitude - point1.longitude) * p)) / 2;
+    return 12742 * math.asin(math.sqrt(a)) * 1000; // 2 * R * asin; R=6371 km
   }
 
   /// Pozisyonu grid anahtarına çevir

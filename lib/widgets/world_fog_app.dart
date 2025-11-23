@@ -79,6 +79,14 @@ class _AppInitializerState extends State<AppInitializer> {
       // Load past routes
       await routeVM.loadPastRoutes();
 
+      // Rota gridleri keşfetme callback'i ayarla
+      // Bu sayede, rota noktaları eklenirken aradaki tüm gridler keşfedilir
+      routeVM.setGridExplorationCallback(mapVM.exploreRouteGrids);
+
+      // Setup background location listener for grid exploration
+      // Bu, uygulamanın arkaplanda olması durumunda da gridleri keşfetmesini sağlar
+      _setupBackgroundLocationListener(locationVM, mapVM, routeVM);
+
       setState(() {
         _isInitialized = true;
       });
@@ -88,6 +96,25 @@ class _AppInitializerState extends State<AppInitializer> {
         _isInitialized = true;
       });
     }
+  }
+
+  /// Arkaplanda konum güncellemelerini dinleyerek grid'leri keşfet
+  void _setupBackgroundLocationListener(LocationViewModel locationVM, MapViewModel mapVM, RouteViewModel routeVM) {
+    // LocationViewModel'in location listener'ını kullan
+    // Bu, uygulamanın UI'de olup olmadığına bakılmaksızın devam eder
+    locationVM.addListener(() {
+      if (locationVM.hasLocation) {
+        final location = locationVM.currentLocation!;
+
+        // Konum her güncellendiğinde grid'i keşfet
+        mapVM.exploreNewGrid(location.position);
+
+        // Aktif rota varsa, rotaya punkt ekle ve alanı keşfet
+        if (routeVM.isActive) {
+          routeVM.addLocationPoint(location);
+        }
+      }
+    });
   }
 
   @override

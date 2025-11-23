@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_strings.dart';
 
 class MapControlButtons extends StatelessWidget {
   final VoidCallback? onLocationPressed;
@@ -17,13 +18,13 @@ class MapControlButtons extends StatelessWidget {
       bottom: 100,
       child: Column(
         children: [
-          _buildControlButton(icon: isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed, onPressed: onLocationPressed, backgroundColor: isFollowingLocation ? Colors.blue : Colors.white, iconColor: isFollowingLocation ? Colors.white : Colors.grey, tooltip: 'Konumumu Takip Et'),
+          _buildControlButton(icon: isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed, onPressed: onLocationPressed, backgroundColor: isFollowingLocation ? Colors.blue : Colors.white, iconColor: isFollowingLocation ? Colors.white : Colors.grey, tooltip: AppStrings.followMyLocation),
           const SizedBox(height: 8),
-          _buildControlButton(icon: showPastRoutes ? Icons.visibility_off : Icons.visibility, onPressed: onTogglePastRoutes, backgroundColor: showPastRoutes ? Colors.orange : Colors.white, iconColor: showPastRoutes ? Colors.white : Colors.grey, tooltip: 'Geçmiş Rotalar'),
+          _buildControlButton(icon: showPastRoutes ? Icons.visibility_off : Icons.visibility, onPressed: onTogglePastRoutes, backgroundColor: showPastRoutes ? Colors.orange : Colors.white, iconColor: showPastRoutes ? Colors.white : Colors.grey, tooltip: AppStrings.pastRoutes),
           const SizedBox(height: 8),
-          _buildControlButton(icon: Icons.person, onPressed: onProfilePressed, backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: 'Profil'),
+          _buildControlButton(icon: Icons.person, onPressed: onProfilePressed, backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: AppStrings.profile),
           const SizedBox(height: 8),
-          _buildControlButton(icon: Icons.settings, onPressed: onSettingsPressed, backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: 'Ayarlar'),
+          _buildControlButton(icon: Icons.settings, onPressed: onSettingsPressed, backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: AppStrings.settings),
         ],
       ),
     );
