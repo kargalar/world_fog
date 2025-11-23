@@ -8,6 +8,7 @@ import '../viewmodels/route_viewmodel.dart';
 import '../models/route_model.dart';
 import '../pages/profile_page.dart';
 import '../pages/settings_page.dart';
+import '../utils/app_strings.dart';
 
 import 'grid_painter_widget.dart';
 
@@ -23,7 +24,7 @@ class MainMapWidget extends StatelessWidget {
 
         if (currentLocation == null) {
           return const Center(
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Konum alınıyor...')]),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text(AppStrings.gettingLocation)]),
           );
         }
 

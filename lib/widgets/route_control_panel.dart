@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_strings.dart';
 
 class RouteControlPanel extends StatelessWidget {
   final bool isTracking;
@@ -22,7 +23,7 @@ class RouteControlPanel extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onStartTracking,
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Takibi Başlat'),
+              label: const Text(AppStrings.startTracking),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
             ),
           ] else ...[
@@ -30,7 +31,7 @@ class RouteControlPanel extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onPauseTracking,
                 icon: const Icon(Icons.pause),
-                label: const Text('Duraklat'),
+                label: const Text(AppStrings.pause),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
               ),
               const SizedBox(width: 8),
@@ -38,7 +39,7 @@ class RouteControlPanel extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onResumeTracking,
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Devam Et'),
+                label: const Text(AppStrings.resume),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
               ),
               const SizedBox(width: 8),
@@ -46,7 +47,7 @@ class RouteControlPanel extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onStopTracking,
               icon: const Icon(Icons.stop),
-              label: const Text('Durdur'),
+              label: const Text(AppStrings.stop),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             ),
           ],

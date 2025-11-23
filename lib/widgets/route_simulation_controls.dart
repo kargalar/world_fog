@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_strings.dart';
 
 class RouteSimulationControls extends StatelessWidget {
   final bool isSimulating;
@@ -40,11 +41,11 @@ class RouteSimulationControls extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Zaman ve ilerleme bilgisi
+          // Time and progress info
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('İlerleme: ${currentPointIndex + 1} / $totalPoints', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text('${AppStrings.progress} ${currentPointIndex + 1} / $totalPoints', style: const TextStyle(fontSize: 12, color: Colors.grey)),
               if (currentSimulationTime != null)
                 Text(
                   '${currentSimulationTime!.hour.toString().padLeft(2, '0')}:'
@@ -58,7 +59,7 @@ class RouteSimulationControls extends StatelessWidget {
           // Slider
           Slider(value: sliderValue, onChanged: onSliderChanged, onChangeStart: onSliderChangeStart, onChangeEnd: onSliderChangeEnd, divisions: totalPoints > 1 ? totalPoints - 1 : 1),
 
-          // Kontrol butonları
+          // Control buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -66,7 +67,7 @@ class RouteSimulationControls extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: onStartSimulation,
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Oynat'),
+                  label: const Text(AppStrings.play),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                 ),
               ] else ...[
@@ -74,14 +75,14 @@ class RouteSimulationControls extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: onPauseSimulation,
                     icon: const Icon(Icons.pause),
-                    label: const Text('Duraklat'),
+                    label: const Text(AppStrings.pause),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
                   ),
                 ] else ...[
                   ElevatedButton.icon(
                     onPressed: onResumeSimulation,
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Devam'),
+                    label: const Text(AppStrings.resume),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                   ),
                 ],
@@ -89,7 +90,7 @@ class RouteSimulationControls extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: onStopSimulation,
                   icon: const Icon(Icons.stop),
-                  label: const Text('Durdur'),
+                  label: const Text(AppStrings.stop),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                 ),
               ],

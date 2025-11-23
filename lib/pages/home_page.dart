@@ -8,8 +8,9 @@ import '../widgets/route_control_panel.dart';
 import '../widgets/route_stats_card.dart';
 import '../widgets/world_fog_app.dart';
 import '../widgets/route_name_dialog.dart';
+import '../utils/app_strings.dart';
 
-/// Ana sayfa widget'ı
+/// Main page widget
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -24,34 +25,34 @@ class _HomePageState extends State<HomePage> {
     _setupLocationListener();
   }
 
-  /// Konum güncellemelerini dinle
+  /// Listen to location updates
   void _setupLocationListener() {
     final locationVM = context.read<LocationViewModel>();
     final mapVM = context.read<MapViewModel>();
     final routeVM = context.read<RouteViewModel>();
 
-    // Konum güncellemelerini dinle
+    // Listen to location updates
     locationVM.addListener(() {
       if (locationVM.hasLocation) {
         final location = locationVM.currentLocation!;
 
-        // Debug: Konum güncellemesi
-        debugPrint('📍 Konum güncellendi: ${location.position.latitude}, ${location.position.longitude}');
+        // Debug: Location update
+        debugPrint('📍 Location updated: ${location.position.latitude}, ${location.position.longitude}');
 
-        // Haritayı güncelle
+        // Update map
         mapVM.updateMapWithLocation(location);
 
-        // Her konum güncellemesinde grid keşfi yap
+        // Explore new grid on every location update
         mapVM.exploreNewGrid(location.position);
 
-        // Aktif rota varsa konum noktası ekle
+        // Add location point if active route
         if (routeVM.isActive) {
           routeVM.addLocationPoint(location);
         }
       }
     });
 
-    // Hata mesajlarını göster
+    // Show error messages
     locationVM.addListener(() {
       if (locationVM.errorMessage != null) {
         SnackBarHelper.showError(context, locationVM.errorMessage!);
@@ -114,25 +115,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Rota takibini başlat
+  /// Start route tracking
   void _startTracking() {
     final locationVM = context.read<LocationViewModel>();
     final routeVM = context.read<RouteViewModel>();
 
     if (!locationVM.isLocationAvailable) {
-      SnackBarHelper.showError(context, 'Konum servisi kullanılamıyor');
+      SnackBarHelper.showError(context, AppStrings.locationServiceUnavailable);
       return;
     }
 
     routeVM.startTracking(locationVM.currentPosition);
-    SnackBarHelper.showSuccess(context, 'Rota takibi başlatıldı');
+    SnackBarHelper.showSuccess(context, AppStrings.routeTrackingStarted);
   }
 
-  /// Rota takibini durdur
+  /// Stop route tracking
   void _stopTracking() {
     final routeVM = context.read<RouteViewModel>();
 
-    // Rota detaylarını hazırla
+    // Prepare route details
     final distance = routeVM.currentRouteDistance;
     final duration = routeVM.currentRouteDuration;
     final pointsCount = routeVM.currentRoutePointsCount;
@@ -145,7 +146,7 @@ class _HomePageState extends State<HomePage> {
         pointsCount: pointsCount,
         onSave: (name) async {
           await routeVM.stopTrackingWithName(name);
-          SnackBarHelper.showSuccess(context, 'Rota "$name" olarak kaydedildi');
+          SnackBarHelper.showSuccess(context, '${AppStrings.routeSavedAs} "$name"');
         },
       ),
     );

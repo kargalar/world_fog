@@ -4,15 +4,16 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../pages/home_page.dart';
+import '../utils/app_strings.dart';
 
-/// Ana uygulama widget'ı
+/// Main application widget
 class WorldFogApp extends StatelessWidget {
   const WorldFogApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'World Fog',
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
@@ -31,7 +32,7 @@ class WorldFogApp extends StatelessWidget {
   }
 }
 
-/// Uygulama başlatıcı widget'ı
+/// Application initializer widget
 class AppInitializer extends StatefulWidget {
   const AppInitializer({super.key});
 
@@ -55,27 +56,27 @@ class _AppInitializerState extends State<AppInitializer> {
       final mapVM = context.read<MapViewModel>();
       final routeVM = context.read<RouteViewModel>();
 
-      // Konum servisini başlat
+      // Initialize location service
       await locationVM.checkLocationServiceStatus();
 
-      // Eğer konum servisi kullanılabilirse konum takibini başlat
+      // If location service is available, start location tracking
       if (locationVM.isLocationAvailable) {
         await locationVM.startLocationTracking(distanceFilter: 1);
 
-        // İlk konumu al
+        // Get initial location
         await locationVM.getCurrentLocation();
 
-        // Haritayı mevcut konuma odakla (MapController hazır olduğunda)
+        // Center map on current location (when MapController is ready)
         if (locationVM.hasLocation) {
-          // MapController henüz hazır olmayabilir, sadece state'i güncelle
+          // MapController may not be ready yet, just update state
           mapVM.updateMapCenter(locationVM.currentPosition!);
         }
       } else {
-        // Konum izni iste
+        // Request location permission
         await locationVM.requestLocationPermission();
       }
 
-      // Geçmiş rotaları yükle
+      // Load past routes
       await routeVM.loadPastRoutes();
 
       setState(() {
@@ -83,7 +84,7 @@ class _AppInitializerState extends State<AppInitializer> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Uygulama başlatılamadı: $e';
+        _errorMessage = '${AppStrings.appStartFailed}$e';
         _isInitialized = true;
       });
     }
@@ -94,7 +95,7 @@ class _AppInitializerState extends State<AppInitializer> {
     if (!_isInitialized) {
       return const Scaffold(
         body: Center(
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('World Fog başlatılıyor...')]),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text(AppStrings.startingApp)]),
         ),
       );
     }
@@ -117,7 +118,7 @@ class _AppInitializerState extends State<AppInitializer> {
                   });
                   _initializeApp();
                 },
-                child: const Text('Tekrar Dene'),
+                child: const Text(AppStrings.tryAgain),
               ),
             ],
           ),
@@ -129,7 +130,7 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 }
 
-/// Hata gösterici widget'ı
+/// Error display widget
 class ErrorDisplay extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -147,7 +148,7 @@ class ErrorDisplay extends StatelessWidget {
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
-            if (onRetry != null) ...[const SizedBox(height: 16), ElevatedButton(onPressed: onRetry, child: const Text('Tekrar Dene'))],
+            if (onRetry != null) ...[const SizedBox(height: 16), ElevatedButton(onPressed: onRetry, child: const Text(AppStrings.tryAgain))],
           ],
         ),
       ),
@@ -155,11 +156,11 @@ class ErrorDisplay extends StatelessWidget {
   }
 }
 
-/// Loading gösterici widget'ı
+/// Loading display widget
 class LoadingDisplay extends StatelessWidget {
   final String message;
 
-  const LoadingDisplay({super.key, this.message = 'Yükleniyor...'});
+  const LoadingDisplay({super.key, this.message = AppStrings.loading});
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +177,7 @@ class LoadingDisplay extends StatelessWidget {
   }
 }
 
-/// Snackbar yardımcı sınıfı
+/// Snackbar helper class
 class SnackBarHelper {
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -185,7 +186,7 @@ class SnackBarHelper {
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
-          label: 'Kapat',
+          label: AppStrings.close,
           textColor: Colors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();

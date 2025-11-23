@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/app_strings.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(double)? onRadiusChanged;
@@ -56,14 +57,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Keşfedilen Alanları Temizle'),
-        content: const Text('Tüm keşfedilen alanları silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
+        title: const Text(AppStrings.clearExploredAreas),
+        content: const Text(AppStrings.confirmClearExploredAreas),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppStrings.cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: const Text('Temizle'),
+            child: const Text(AppStrings.clear),
           ),
         ],
       ),
@@ -73,7 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('explored_areas');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keşfedilen alanlar temizlendi'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.exploredAreasCleared), backgroundColor: Colors.green));
       }
     }
   }
@@ -96,11 +97,11 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ayarlar'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(title: const Text(AppStrings.settings), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Keşif Ayarları
+          // Exploration Settings
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -111,11 +112,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       Icon(Icons.explore, color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
-                      Text('Keşif Ayarları', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppStrings.explorationSettings, style: Theme.of(context).textTheme.titleLarge),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Text('Keşif Yarıçapı: ${_explorationRadius >= 1000 ? '${(_explorationRadius / 1000).toStringAsFixed(1)} km' : '${_explorationRadius.toInt()} metre'}', style: Theme.of(context).textTheme.titleMedium),
+                  Text('${AppStrings.explorationRadius}: ${_explorationRadius >= 1000 ? '${(_explorationRadius / 1000).toStringAsFixed(1)} km' : '${_explorationRadius.toInt()} ${AppStrings.meters}'}', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Slider(
                     value: _explorationRadius,
@@ -137,8 +138,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       _saveRadius(_explorationRadius);
                     },
                   ),
-                  const Text('Bu ayar, bir noktanın keşfedilmiş sayılması için gereken minimum mesafeyi belirler. Daha büyük yarıçap daha geniş alanları keşfetmenizi sağlar.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  Text('Keşfedilen Alanların Görünürlüğü: %${(_areaOpacity * 100).toInt()}', style: Theme.of(context).textTheme.titleMedium),
+                  const Text(AppStrings.explorationRadiusDescription, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text('${AppStrings.exploredAreasVisibility}: %${(_areaOpacity * 100).toInt()}', style: Theme.of(context).textTheme.titleMedium),
                   Slider(
                     value: _areaOpacity,
                     min: 0.05,
@@ -154,14 +155,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       _saveOpacity(value);
                     },
                   ),
-                  const Text('Bu ayar, keşfedilen alanların haritada ne kadar belirgin görüneceğini belirler. Düşük değerler haritanın daha net görünmesini sağlar.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Text(AppStrings.exploredAreasVisibilityDescription, style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
 
-          // Harita Ayarları
+          // Map Settings
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -172,18 +173,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       Icon(Icons.map, color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
-                      Text('Harita Ayarları', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppStrings.mapSettings, style: Theme.of(context).textTheme.titleLarge),
                     ],
                   ),
                   const SizedBox(height: 16),
                   ListTile(
                     leading: const Icon(Icons.clear_all, color: Colors.red),
-                    title: const Text('Keşfedilen Alanları Temizle'),
-                    subtitle: const Text('Tüm keşfedilmiş alanları haritadan siler'),
+                    title: const Text(AppStrings.clearExploredAreas),
+                    subtitle: const Text(AppStrings.deleteAllExploredAreas),
                     trailing: ElevatedButton(
                       onPressed: _clearExploredAreas,
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                      child: const Text('Temizle'),
+                      child: const Text(AppStrings.clear),
                     ),
                   ),
                 ],
@@ -202,28 +203,35 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       Icon(Icons.info, color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
-                      Text('Uygulama Bilgileri', style: Theme.of(context).textTheme.titleLarge),
+                      Text(AppStrings.appInfo, style: Theme.of(context).textTheme.titleLarge),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const ListTile(leading: Icon(Icons.apps), title: Text('Uygulama Adı'), subtitle: Text('World Fog - Keşif Haritası')),
-                  const ListTile(leading: Icon(Icons.info_outline), title: Text('Versiyon'), subtitle: Text('1.0.0')),
-                  const ListTile(leading: Icon(Icons.description), title: Text('Açıklama'), subtitle: Text('Gezdiğiniz yerleri keşfederek haritada görselleştirin')),
+                  const ListTile(leading: Icon(Icons.apps), title: Text(AppStrings.appNameLabel), subtitle: Text(AppStrings.appDescription)),
+                  const ListTile(leading: Icon(Icons.info_outline), title: Text(AppStrings.versionLabel), subtitle: Text(AppStrings.version)),
+                  const ListTile(leading: Icon(Icons.description), title: Text(AppStrings.descriptionLabel), subtitle: Text(AppStrings.appFullDescription)),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // Renk legend'ı
-          Text('Keşif Frekansı Renk Haritası', style: Theme.of(context).textTheme.titleMedium),
+          // Color legend
+          Text(AppStrings.explorationFrequencyColorMap, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 4,
-            children: [_buildColorLegend('İlk kez', Colors.blue), _buildColorLegend('2-3 kez', Colors.lightBlue), _buildColorLegend('4-5 kez', Colors.teal), _buildColorLegend('6-7 kez', Colors.green), _buildColorLegend('8-9 kez', Colors.yellow), _buildColorLegend('10+ kez', Colors.red)],
+            children: [
+              _buildColorLegend(AppStrings.firstTime, Colors.blue),
+              _buildColorLegend(AppStrings.twoToThreeTimes, Colors.lightBlue),
+              _buildColorLegend(AppStrings.fourToFiveTimes, Colors.teal),
+              _buildColorLegend(AppStrings.sixToSevenTimes, Colors.green),
+              _buildColorLegend(AppStrings.eightToNineTimes, Colors.yellow),
+              _buildColorLegend(AppStrings.tenPlusTimes, Colors.red),
+            ],
           ),
           const SizedBox(height: 8),
-          const Text('Keşfedilen alanlar, sıklığa göre mavi (az) ile kırmızı (çok) arasında renk alır.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const Text(AppStrings.colorMapDescription, style: TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );

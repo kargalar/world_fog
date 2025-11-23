@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/route_model.dart';
 import '../services/route_service.dart';
 import 'route_detail_page.dart';
+import '../utils/app_strings.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -41,16 +42,16 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rotayı Sil'),
-        content: Text('${route.name} rotasını silmek istediğinizden emin misiniz?'),
+        title: const Text(AppStrings.deleteRoute),
+        content: Text('${AppStrings.confirmDeleteRoute} ${route.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppStrings.cancel)),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _deleteRoute(route.id);
             },
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            child: const Text(AppStrings.delete, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -64,14 +65,14 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rota Adını Düzenle'),
+        title: const Text(AppStrings.editRouteName),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(labelText: 'Rota Adı', border: OutlineInputBorder()),
+          decoration: const InputDecoration(labelText: AppStrings.routeName, border: OutlineInputBorder()),
           maxLength: 50,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppStrings.cancel)),
           ElevatedButton(
             onPressed: () async {
               final newName = nameController.text.trim();
@@ -83,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
               // ignore: use_build_context_synchronously
               if (mounted) Navigator.pop(context);
             },
-            child: const Text('Kaydet'),
+            child: const Text(AppStrings.save),
           ),
         ],
       ),
@@ -93,7 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rota Geçmişi'), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(title: const Text(AppStrings.routeHistory), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _routes.isEmpty
@@ -103,10 +104,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Icon(Icons.route, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('Henüz kaydedilmiş rota yok', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text(AppStrings.noSavedRoutes, style: TextStyle(fontSize: 18, color: Colors.grey)),
                   SizedBox(height: 8),
                   Text(
-                    'Haritada takibi başlatarak rotalarınızı kaydedin',
+                    AppStrings.startTrackingToSave,
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -115,16 +116,16 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : Column(
               children: [
-                // İstatistik kartları
+                // Statistics cards
                 Container(
                   padding: const EdgeInsets.all(16),
                   color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.grey[100],
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [_buildStatCard('Toplam Rota', '${_routes.length}', Icons.route, Colors.blue), _buildStatCard('Toplam Mesafe', _getTotalDistance(), Icons.straighten, Colors.green), _buildStatCard('Toplam Süre', _getTotalDuration(), Icons.timer, Colors.orange)],
+                    children: [_buildStatCard(AppStrings.totalRoutes, '${_routes.length}', Icons.route, Colors.blue), _buildStatCard(AppStrings.totalDistance, _getTotalDistance(), Icons.straighten, Colors.green), _buildStatCard(AppStrings.totalTime, _getTotalDuration(), Icons.timer, Colors.orange)],
                   ),
                 ),
-                // Rota listesi
+                // Route list
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -157,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   children: [
                                     Icon(Icons.coffee, size: 16, color: Colors.orange[600]),
                                     const SizedBox(width: 4),
-                                    Text('Mola: ${route.formattedBreakTime}'),
+                                    Text('${AppStrings.breakLabel} ${route.formattedBreakTime}'),
                                   ],
                                 ),
                               ],

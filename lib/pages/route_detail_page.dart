@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/route_model.dart';
+import '../utils/app_strings.dart';
 import 'dart:async';
 
 class RouteDetailPage extends StatefulWidget {
@@ -210,7 +211,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
             children: [
               const Icon(Icons.terrain, color: Colors.brown, size: 12),
               const SizedBox(width: 4),
-              Text('Yükseklik: ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
               if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) ...[
                 const SizedBox(width: 8),
                 const Icon(Icons.height, color: Colors.orange, size: 12),

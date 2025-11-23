@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_strings.dart';
 
 class RouteStatsCard extends StatelessWidget {
   final double currentRouteDistance;
@@ -21,16 +22,16 @@ class RouteStatsCard extends StatelessWidget {
               children: [
                 Icon(Icons.route, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
-                Text('Aktif Rota', style: Theme.of(context).textTheme.titleLarge),
+                Text(AppStrings.activeRoute, style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('Mesafe', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
-                _buildStatItem('Süre', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
-                if (isPaused || currentBreakDuration.inSeconds > 0) _buildStatItem('Mola', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
+                _buildStatItem('Distance', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
+                _buildStatItem('Duration', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
+                if (isPaused || currentBreakDuration.inSeconds > 0) _buildStatItem('Break', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
               ],
             ),
           ],

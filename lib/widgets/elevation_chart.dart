@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/route_model.dart';
+import '../utils/app_strings.dart';
 
 class ElevationChart extends StatelessWidget {
   final List<RoutePoint> routePoints;
@@ -87,7 +88,7 @@ class ElevationChart extends StatelessWidget {
             children: [
               const Icon(Icons.terrain, color: Colors.brown, size: 12),
               const SizedBox(width: 4),
-              Text('Yükseklik: ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
               if (currentPointIndex >= 0 && currentPointIndex < routePoints.length) ...[
                 const SizedBox(width: 8),
                 const Icon(Icons.height, color: Colors.orange, size: 12),
