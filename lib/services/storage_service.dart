@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:latlong2/latlong.dart';
 import '../models/app_state_model.dart';
 import '../models/route_model.dart';
 
@@ -30,11 +29,11 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final settingsJson = prefs.getString(_settingsKey);
-      
+
       if (settingsJson == null) {
         return const AppSettingsModel(); // Varsayılan ayarlar
       }
-      
+
       final settingsMap = json.decode(settingsJson) as Map<String, dynamic>;
       return AppSettingsModel.fromJson(settingsMap);
     } catch (e) {
@@ -44,49 +43,46 @@ class StorageService {
   }
 
   /// Keşfedilen alanları kaydet
-  Future<void> saveExploredAreas(List<LatLng> areas) async {
+  Future<void> saveExploredAreas(Set<String> grids) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final areasData = areas.map((area) => '${area.latitude},${area.longitude}').toList();
-      await prefs.setStringList(_exploredAreasKey, areasData);
+      final gridsData = grids.toList();
+      await prefs.setStringList(_exploredAreasKey, gridsData);
     } catch (e) {
       throw StorageException('Keşfedilen alanlar kaydedilemedi: $e');
     }
   }
 
   /// Keşfedilen alanları yükle
-  Future<List<LatLng>> loadExploredAreas() async {
+  Future<Set<String>> loadExploredAreas() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final areasData = prefs.getStringList(_exploredAreasKey) ?? [];
-      
-      return areasData.map((data) {
-        final coords = data.split(',');
-        return LatLng(double.parse(coords[0]), double.parse(coords[1]));
-      }).toList();
+      final gridsData = prefs.getStringList(_exploredAreasKey) ?? [];
+
+      return gridsData.toSet();
     } catch (e) {
-      // Hata durumunda boş liste döndür
-      return [];
+      // Hata durumunda boş set döndür
+      return {};
     }
   }
 
   /// Keşfedilen alan ekle
-  Future<void> addExploredArea(LatLng area) async {
+  Future<void> addExploredArea(String gridKey) async {
     try {
-      final currentAreas = await loadExploredAreas();
-      currentAreas.add(area);
-      await saveExploredAreas(currentAreas);
+      final currentGrids = await loadExploredAreas();
+      currentGrids.add(gridKey);
+      await saveExploredAreas(currentGrids);
     } catch (e) {
       throw StorageException('Keşfedilen alan eklenemedi: $e');
     }
   }
 
   /// Birden fazla keşfedilen alan ekle
-  Future<void> addExploredAreas(List<LatLng> newAreas) async {
+  Future<void> addExploredAreas(Set<String> newGrids) async {
     try {
-      final currentAreas = await loadExploredAreas();
-      currentAreas.addAll(newAreas);
-      await saveExploredAreas(currentAreas);
+      final currentGrids = await loadExploredAreas();
+      currentGrids.addAll(newGrids);
+      await saveExploredAreas(currentGrids);
     } catch (e) {
       throw StorageException('Keşfedilen alanlar eklenemedi: $e');
     }
@@ -109,11 +105,11 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final routesString = prefs.getString(_routesKey);
-      
+
       if (routesString == null) {
         return [];
       }
-      
+
       final routesJson = json.decode(routesString) as List<dynamic>;
       return routesJson.map((routeJson) => RouteModel.fromJson(routeJson as Map<String, dynamic>)).toList();
     } catch (e) {
@@ -180,7 +176,7 @@ class StorageService {
   Future<void> saveSetting(String key, dynamic value) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       if (value is String) {
         await prefs.setString(key, value);
       } else if (value is int) {
@@ -211,9 +207,9 @@ class StorageService {
 /// Storage işlemlerinde oluşan hataları temsil eden exception sınıfı
 class StorageException implements Exception {
   final String message;
-  
+
   const StorageException(this.message);
-  
+
   @override
   String toString() => 'StorageException: $message';
 }

@@ -60,56 +60,31 @@ class MapStateModel {
 
 /// Keşfedilen alanları tutan model
 class ExploredAreaModel {
-  final List<LatLng> areas;
+  final Set<String> exploredGrids;
   final DateTime lastUpdated;
 
-  const ExploredAreaModel({required this.areas, required this.lastUpdated});
+  const ExploredAreaModel({required this.exploredGrids, required this.lastUpdated});
 
-  ExploredAreaModel copyWith({List<LatLng>? areas, DateTime? lastUpdated}) {
-    return ExploredAreaModel(areas: areas ?? this.areas, lastUpdated: lastUpdated ?? this.lastUpdated);
+  ExploredAreaModel copyWith({Set<String>? exploredGrids, DateTime? lastUpdated}) {
+    return ExploredAreaModel(exploredGrids: exploredGrids ?? this.exploredGrids, lastUpdated: lastUpdated ?? this.lastUpdated);
   }
 
-  ExploredAreaModel addArea(LatLng newArea) {
-    return ExploredAreaModel(areas: [...areas, newArea], lastUpdated: DateTime.now());
+  ExploredAreaModel addGrid(String gridKey) {
+    return ExploredAreaModel(exploredGrids: {...exploredGrids, gridKey}, lastUpdated: DateTime.now());
   }
 
-  ExploredAreaModel addAreas(List<LatLng> newAreas) {
-    return ExploredAreaModel(areas: [...areas, ...newAreas], lastUpdated: DateTime.now());
-  }
-
-  bool isAreaExplored(LatLng position, double radius) {
-    for (final area in areas) {
-      final distance = _calculateDistance(area, position);
-      if (distance < radius) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  double _calculateDistance(LatLng point1, LatLng point2) {
-    // Geolocator kullanarak mesafe hesapla - daha doğru sonuç verir
-    return _distanceBetween(point1.latitude, point1.longitude, point2.latitude, point2.longitude);
-  }
-
-  // Basit mesafe hesaplama fonksiyonu
-  double _distanceBetween(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371000; // meters
-    final double dLat = (lat2 - lat1) * (3.14159265359 / 180);
-    final double dLon = (lon2 - lon1) * (3.14159265359 / 180);
-    final double a = (dLat / 2) * (dLat / 2) + (lat1 * 3.14159265359 / 180) * (lat2 * 3.14159265359 / 180) * (dLon / 2) * (dLon / 2);
-    final double c = 2 * (a < 1 ? a : 1);
-    return earthRadius * c;
+  bool isGridExplored(String gridKey) {
+    return exploredGrids.contains(gridKey);
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is ExploredAreaModel && other.areas.length == areas.length && other.lastUpdated == lastUpdated;
+    return other is ExploredAreaModel && other.exploredGrids.length == exploredGrids.length && other.lastUpdated == lastUpdated;
   }
 
   @override
   int get hashCode {
-    return areas.hashCode ^ lastUpdated.hashCode;
+    return exploredGrids.hashCode ^ lastUpdated.hashCode;
   }
 }

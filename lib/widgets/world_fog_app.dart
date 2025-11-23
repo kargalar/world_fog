@@ -18,11 +18,7 @@ class WorldFogApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
         useMaterial3: true,
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
-        useMaterial3: true,
-      ),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => LocationViewModel()),
@@ -64,7 +60,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
       // Eğer konum servisi kullanılabilirse konum takibini başlat
       if (locationVM.isLocationAvailable) {
-        await locationVM.startLocationTracking();
+        await locationVM.startLocationTracking(distanceFilter: 1);
 
         // İlk konumu al
         await locationVM.getCurrentLocation();

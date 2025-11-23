@@ -163,6 +163,43 @@ class RouteViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Rota takibini durdur ve özel isimle kaydet
+  Future<void> stopTrackingWithName(String name) async {
+    if (!_isTracking) return;
+
+    // Timers'ı durdur
+    _durationTimer?.cancel();
+    _breakTimer?.cancel();
+
+    // Son mola süresini hesapla
+    if (_isPaused && _pauseStartTime != null) {
+      final pauseDuration = DateTime.now().difference(_pauseStartTime!);
+      _totalPausedTime += pauseDuration;
+    }
+
+    // Rota modelini oluştur
+    if (_routeStartTime != null && _currentRoutePoints.isNotEmpty) {
+      final route = RouteModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: name,
+        routePoints: List.from(_currentRoutePoints),
+        exploredAreas: List.from(_currentRouteExploredAreas),
+        totalDistance: _currentRouteDistance,
+        totalDuration: _currentRouteDuration,
+        totalBreakTime: _totalPausedTime,
+        startTime: _routeStartTime!,
+        endTime: DateTime.now(),
+      );
+
+      // Rotayı kaydet
+      await saveRoute(route);
+    }
+
+    // State'i sıfırla
+    _resetRouteState();
+    notifyListeners();
+  }
+
   /// Yeni konum noktası ekle
   void addLocationPoint(LocationModel location) {
     if (!_isTracking || _isPaused) return;

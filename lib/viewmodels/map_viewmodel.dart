@@ -12,14 +12,13 @@ class MapViewModel extends ChangeNotifier {
 
   // State variables
   MapStateModel _mapState = const MapStateModel();
-  ExploredAreaModel _exploredAreas = ExploredAreaModel(areas: [], lastUpdated: DateTime.now());
+  ExploredAreaModel _exploredAreas = ExploredAreaModel(exploredGrids: {}, lastUpdated: DateTime.now());
   AppSettingsModel _settings = const AppSettingsModel();
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Sıcaklık haritası için geçiş sıklığı takibi
-  final Map<String, int> _areaVisitCount = {};
-  final Map<String, DateTime> _lastVisitTime = {};
+  // Grid boyutu: 0.125km² için yaklaşık 0.0032 derece (354m / 111320m)
+  static const double _gridSizeDegrees = 0.0032;
 
   // Getters
   MapController get mapController => _mapController;
@@ -37,8 +36,8 @@ class MapViewModel extends ChangeNotifier {
   bool get showPastRoutes => _mapState.showPastRoutes;
 
   // Explored areas getters
-  List<LatLng> get exploredAreasList => _exploredAreas.areas;
-  int get exploredAreasCount => _exploredAreas.areas.length;
+  Set<String> get exploredGrids => _exploredAreas.exploredGrids;
+  int get exploredAreasCount => _exploredAreas.exploredGrids.length;
   DateTime get lastExplorationUpdate => _exploredAreas.lastUpdated;
 
   MapViewModel() {
@@ -72,8 +71,8 @@ class MapViewModel extends ChangeNotifier {
   /// Keşfedilen alanları yükle
   Future<void> _loadExploredAreas() async {
     try {
-      final areas = await _storageService.loadExploredAreas();
-      _exploredAreas = ExploredAreaModel(areas: areas, lastUpdated: DateTime.now());
+      final grids = await _storageService.loadExploredAreas();
+      _exploredAreas = ExploredAreaModel(exploredGrids: grids, lastUpdated: DateTime.now());
       notifyListeners();
     } catch (e) {
       debugPrint('Keşfedilen alanlar yüklenemedi: $e');
@@ -164,32 +163,31 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Her adımda alan keşfet (sıcaklık haritası için)
-  Future<bool> exploreNewArea(LatLng position) async {
+  /// Her adımda grid keşfet
+  Future<bool> exploreNewGrid(LatLng position) async {
     try {
-      // Pozisyonu grid sistemine çevir (daha hassas takip için)
-      final gridKey = _getGridKey(position, _settings.explorationRadius / 3);
+      // Pozisyonu grid sistemine çevir
+      final gridKey = _getGridKey(position, _gridSizeDegrees);
 
-      // Bu alanın ziyaret sayısını artır
-      _areaVisitCount[gridKey] = (_areaVisitCount[gridKey] ?? 0) + 1;
-      _lastVisitTime[gridKey] = DateTime.now();
-
-      // Her zaman alanı ekle (sıklık takibi için)
-      _exploredAreas = _exploredAreas.addArea(position);
-
-      // Debug: Keşfedilen alan sayısını yazdır
-      debugPrint('🗺️ Yeni alan keşfedildi! Grid: $gridKey, Ziyaret: ${_areaVisitCount[gridKey]}, Toplam alan: ${_exploredAreas.areas.length}');
-
-      // Storage'a kaydet (her 10 adımda bir)
-      if (_areaVisitCount[gridKey]! % 10 == 1) {
-        await _storageService.addExploredArea(position);
+      // Bu grid zaten keşfedilmiş mi kontrol et
+      if (_exploredAreas.isGridExplored(gridKey)) {
+        return false; // Zaten keşfedilmiş
       }
 
+      // Grid'i keşfedilenlere ekle
+      _exploredAreas = _exploredAreas.addGrid(gridKey);
+
+      // Debug: Keşfedilen grid sayısını yazdır
+      debugPrint('🗺️ Yeni grid keşfedildi! Grid: $gridKey, Toplam grid: ${_exploredAreas.exploredGrids.length}');
+
+      // Storage'a kaydet
+      await _storageService.addExploredArea(gridKey);
+
       notifyListeners();
-      return true; // Her zaman yeni veri eklendi
+      return true;
     } catch (e) {
-      _errorMessage = 'Alan kaydedilemedi: $e';
-      debugPrint('❌ Alan keşfi hatası: $e');
+      _errorMessage = 'Grid kaydedilemedi: $e';
+      debugPrint('❌ Grid keşfi hatası: $e');
       notifyListeners();
       return false;
     }
@@ -202,58 +200,29 @@ class MapViewModel extends ChangeNotifier {
     return '${latGrid}_$lngGrid';
   }
 
-  /// Bir alanın ziyaret sıklığını al
-  int getVisitCount(LatLng position) {
-    final gridKey = _getGridKey(position, _settings.explorationRadius / 3);
-    return _areaVisitCount[gridKey] ?? 0;
-  }
-
-  /// Sıklığa göre renk hesapla
-  Color getHeatmapColor(LatLng position) {
-    final visitCount = getVisitCount(position);
-
-    if (visitCount == 0) return Colors.transparent;
-
-    // Sıcaklık haritası renkleri: Mavi -> Yeşil -> Sarı -> Kırmızı
-    final intensity = (visitCount / 50.0).clamp(0.0, 1.0); // Max 50 ziyaret için normalize
-
-    if (intensity < 0.25) {
-      // Mavi -> Cyan
-      return Color.lerp(Colors.blue.withValues(alpha: 0.3), Colors.cyan.withValues(alpha: 0.5), intensity * 4)!;
-    } else if (intensity < 0.5) {
-      // Cyan -> Yeşil
-      return Color.lerp(Colors.cyan.withValues(alpha: 0.5), Colors.green.withValues(alpha: 0.6), (intensity - 0.25) * 4)!;
-    } else if (intensity < 0.75) {
-      // Yeşil -> Sarı
-      return Color.lerp(Colors.green.withValues(alpha: 0.6), Colors.yellow.withValues(alpha: 0.7), (intensity - 0.5) * 4)!;
-    } else {
-      // Sarı -> Kırmızı
-      return Color.lerp(Colors.yellow.withValues(alpha: 0.7), Colors.red.withValues(alpha: 0.8), (intensity - 0.75) * 4)!;
-    }
-  }
-
   /// Birden fazla alan keşfet
   Future<int> exploreNewAreas(List<LatLng> positions) async {
     try {
-      int newAreasCount = 0;
-      List<LatLng> newAreas = [];
+      int newGridsCount = 0;
+      Set<String> newGrids = {};
 
       for (final position in positions) {
-        if (!_exploredAreas.isAreaExplored(position, _settings.explorationRadius)) {
-          newAreas.add(position);
-          newAreasCount++;
+        final gridKey = _getGridKey(position, _gridSizeDegrees);
+        if (!_exploredAreas.isGridExplored(gridKey)) {
+          newGrids.add(gridKey);
+          newGridsCount++;
         }
       }
 
-      if (newAreas.isNotEmpty) {
-        _exploredAreas = _exploredAreas.addAreas(newAreas);
-        await _storageService.addExploredAreas(newAreas);
+      if (newGrids.isNotEmpty) {
+        _exploredAreas = ExploredAreaModel(exploredGrids: {..._exploredAreas.exploredGrids, ...newGrids}, lastUpdated: DateTime.now());
+        await _storageService.addExploredAreas(newGrids);
         notifyListeners();
       }
 
-      return newAreasCount;
+      return newGridsCount;
     } catch (e) {
-      _errorMessage = 'Yeni alanlar kaydedilemedi: $e';
+      _errorMessage = 'Yeni gridler kaydedilemedi: $e';
       notifyListeners();
       return 0;
     }
@@ -293,7 +262,7 @@ class MapViewModel extends ChangeNotifier {
   Future<void> clearExploredAreas() async {
     try {
       await _storageService.clearExploredAreas();
-      _exploredAreas = ExploredAreaModel(areas: [], lastUpdated: DateTime.now());
+      _exploredAreas = ExploredAreaModel(exploredGrids: {}, lastUpdated: DateTime.now());
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Keşfedilen alanlar temizlenemedi: $e';

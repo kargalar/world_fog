@@ -6,8 +6,10 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../models/route_model.dart';
+import '../pages/profile_page.dart';
+import '../pages/settings_page.dart';
 
-import 'fog_painter_widget.dart';
+import 'grid_painter_widget.dart';
 
 /// Ana harita widget'ı
 class MainMapWidget extends StatelessWidget {
@@ -41,23 +43,18 @@ class MainMapWidget extends StatelessWidget {
           ),
           children: [
             // Tile Layer
-            TileLayer(
-              urlTemplate: Theme.of(context).brightness == Brightness.dark ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.world_fog',
-              subdomains: const ['a', 'b', 'c', 'd'],
-            ),
+            TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.example.world_fog', subdomains: const ['a', 'b', 'c', 'd']),
 
-            // Keşfedilen alanlar - Gerçek sis efekti
-            if (mapVM.exploredAreasList.isNotEmpty)
-              Builder(
-                builder: (context) {
-                  debugPrint('�️ Haritada ${mapVM.exploredAreasList.length} sis bulutu çiziliyor');
-                  return FogPainterWidget(exploredAreas: mapVM.exploredAreasList, explorationRadius: mapVM.settings.explorationRadius, opacity: mapVM.settings.areaOpacity, baseColor: Colors.blue, mapController: mapVM.mapController);
-                },
+            // Keşfedilen gridler
+            if (mapVM.exploredGrids.isNotEmpty)
+              GridPainterWidget(
+                exploredGrids: mapVM.exploredGrids,
+                gridSizeDegrees: 0.0032, // 0.125km² için
+                mapController: mapVM.mapController,
               ),
 
             // Aktif rota keşif alanları - Yeşil sis efekti
-            if (routeVM.currentRouteExploredAreas.isNotEmpty) FogPainterWidget(exploredAreas: routeVM.currentRouteExploredAreas, explorationRadius: mapVM.settings.explorationRadius, opacity: mapVM.settings.areaOpacity, baseColor: Colors.green, mapController: mapVM.mapController),
+            // TODO: Rota için grid sistemi eklenebilir
 
             // Geçmiş rotalar
             if (mapVM.showPastRoutes && routeVM.pastRoutes.isNotEmpty) _buildPastRoutesLayer(routeVM.pastRoutes),
@@ -182,6 +179,33 @@ class MapControlButtons extends StatelessWidget {
                 backgroundColor: Colors.white,
                 iconColor: Colors.grey,
                 tooltip: 'Konumuma Git',
+              ),
+
+              const SizedBox(height: 8),
+
+              // Profil butonu
+              _buildControlButton(
+                icon: Icons.person,
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
+                backgroundColor: Colors.white,
+                iconColor: Colors.grey,
+                tooltip: 'Profil ve Rota Geçmişi',
+              ),
+
+              const SizedBox(height: 8),
+
+              // Ayarlar butonu
+              _buildControlButton(
+                icon: Icons.settings,
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsPage(onRadiusChanged: (newRadius) => mapVM.updateExplorationRadius(newRadius), onOpacityChanged: (newOpacity) => mapVM.updateAreaOpacity(newOpacity)),
+                  ),
+                ),
+                backgroundColor: Colors.white,
+                iconColor: Colors.grey,
+                tooltip: 'Ayarlar',
               ),
             ],
           ),

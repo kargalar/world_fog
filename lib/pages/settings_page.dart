@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Function(ThemeMode) onThemeChanged;
   final Function(double)? onRadiusChanged;
   final Function(double)? onOpacityChanged;
 
-  const SettingsPage({super.key, required this.onThemeChanged, this.onRadiusChanged, this.onOpacityChanged});
+  const SettingsPage({super.key, this.onRadiusChanged, this.onOpacityChanged});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  ThemeMode _currentTheme = ThemeMode.system;
   double _explorationRadius = 50.0;
   double _areaOpacity = 0.3;
 
@@ -25,24 +23,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final themeIndex = prefs.getInt('theme_mode') ?? 0;
     final radius = prefs.getDouble('exploration_radius') ?? 50.0;
     final opacity = prefs.getDouble('area_opacity') ?? 0.3;
 
     setState(() {
-      _currentTheme = ThemeMode.values[themeIndex];
       _explorationRadius = radius;
       _areaOpacity = opacity;
     });
-  }
-
-  Future<void> _saveTheme(ThemeMode theme) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('theme_mode', theme.index);
-    setState(() {
-      _currentTheme = theme;
-    });
-    widget.onThemeChanged(theme);
   }
 
   Future<void> _saveRadius(double radius) async {
@@ -113,31 +100,6 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Tema Ayarları
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.palette, color: Theme.of(context).primaryColor),
-                      const SizedBox(width: 8),
-                      Text('Tema Ayarları', style: Theme.of(context).textTheme.titleLarge),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  RadioListTile<ThemeMode>(title: const Text('Sistem Teması'), subtitle: const Text('Cihazın tema ayarını takip eder'), value: ThemeMode.system, groupValue: _currentTheme, onChanged: (value) => _saveTheme(value!)),
-                  RadioListTile<ThemeMode>(title: const Text('Açık Tema'), subtitle: const Text('Her zaman açık tema kullan'), value: ThemeMode.light, groupValue: _currentTheme, onChanged: (value) => _saveTheme(value!)),
-                  RadioListTile<ThemeMode>(title: const Text('Koyu Tema'), subtitle: const Text('Her zaman koyu tema kullan'), value: ThemeMode.dark, groupValue: _currentTheme, onChanged: (value) => _saveTheme(value!)),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
           // Keşif Ayarları
           Card(
             child: Padding(
