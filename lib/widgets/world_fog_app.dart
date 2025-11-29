@@ -85,7 +85,7 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
 
       // If location service is available, start location tracking
       if (locationVM.isLocationAvailable) {
-        await locationVM.startLocationTracking(distanceFilter: 1);
+        await locationVM.startLocationTracking(); // Uses default distanceFilter: 0 for real-time tracking
 
         // Get initial location
         await locationVM.getCurrentLocation();

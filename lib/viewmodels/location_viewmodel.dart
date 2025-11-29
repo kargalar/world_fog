@@ -55,6 +55,7 @@ class LocationViewModel extends ChangeNotifier {
       // Location stream'ini dinle - Arkaplanda da çalışması için özel ayarlar
       _locationSubscription = _locationService.locationStream.listen(
         (location) {
+          debugPrint('📍 ViewModel: Yeni konum alındı: ${location.position.latitude}, ${location.position.longitude}');
           _currentLocation = location;
           _errorMessage = null; // Başarılı konum güncellemesinde hatayı temizle
           notifyListeners();
@@ -136,7 +137,7 @@ class LocationViewModel extends ChangeNotifier {
   }
 
   /// Konum takibini başlat
-  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.high, int distanceFilter = 10}) async {
+  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.bestForNavigation, int distanceFilter = 0}) async {
     try {
       _errorMessage = null;
 

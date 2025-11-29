@@ -93,7 +93,7 @@ class LocationService {
   }
 
   /// Konum takibini başlat - Canlı takip için optimize edildi
-  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.high, int distanceFilter = 1}) async {
+  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.bestForNavigation, int distanceFilter = 0}) async {
     try {
       final status = await checkLocationServiceStatus();
       if (!status.isAvailable) {
@@ -112,30 +112,33 @@ class LocationService {
       if (defaultTargetPlatform == TargetPlatform.android) {
         locationSettings = AndroidSettings(
           accuracy: accuracy,
-          distanceFilter: distanceFilter,
+          distanceFilter: distanceFilter > 0 ? distanceFilter : 10, // Minimum 10m distance filter
           forceLocationManager: false,
-          intervalDuration: const Duration(milliseconds: 500), // Update every 500ms for smooth tracking
+          intervalDuration: const Duration(milliseconds: 1000), // Update every 1000ms (1 second) to reduce system load
           foregroundNotificationConfig: const ForegroundNotificationConfig(
             notificationText: "Rota takibi devam ediyor",
             notificationTitle: "World Fog",
-            enableWakeLock: true,
+            enableWakeLock: false,
             notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
           ),
         );
       } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-        locationSettings = AppleSettings(accuracy: accuracy, activityType: ActivityType.fitness, distanceFilter: distanceFilter, pauseLocationUpdatesAutomatically: false, showBackgroundLocationIndicator: true);
+        // automotiveNavigation provides most frequent updates for real-time tracking
+        locationSettings = AppleSettings(accuracy: accuracy, activityType: ActivityType.automotiveNavigation, distanceFilter: distanceFilter, pauseLocationUpdatesAutomatically: false, showBackgroundLocationIndicator: true);
       } else {
         locationSettings = LocationSettings(accuracy: accuracy, distanceFilter: distanceFilter);
       }
 
       _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
         (Position position) {
+          debugPrint('📍 YENİ KONUM ALINDI: ${position.latitude}, ${position.longitude}');
           final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
 
           _locationController.add(locationModel);
+          debugPrint('📍 LocationController\'a eklendi');
         },
         onError: (error) {
-          debugPrint('Konum stream hatası: $error');
+          debugPrint('❌ Konum stream hatası: $error');
           _statusController.add(LocationServiceStatus(isEnabled: false, permissionStatus: LocationPermissionStatus.unknown, errorMessage: error.toString()));
 
           // Hata durumunda yeniden başlatmayı dene
@@ -148,6 +151,7 @@ class LocationService {
         cancelOnError: false,
       );
 
+      debugPrint('✅ Konum takibi başlatıldı - distanceFilter: $distanceFilter, accuracy: $accuracy');
       return true;
     } catch (e) {
       debugPrint('Konum takibi başlatılamadı: $e');
