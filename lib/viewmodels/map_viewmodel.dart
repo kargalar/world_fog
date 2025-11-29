@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/app_state_model.dart';
 import '../models/location_model.dart';
 import '../services/storage_service.dart';
@@ -9,7 +9,7 @@ import '../services/storage_service.dart';
 /// Harita işlemlerini yöneten ViewModel
 class MapViewModel extends ChangeNotifier {
   final StorageService _storageService = StorageService();
-  final MapController _mapController = MapController();
+  final Completer<GoogleMapController> _mapControllerCompleter = Completer<GoogleMapController>();
 
   // State variables
   MapStateModel _mapState = const MapStateModel();
@@ -22,7 +22,7 @@ class MapViewModel extends ChangeNotifier {
   static const double _gridSizeDegrees = 0.0032;
 
   // Getters
-  MapController get mapController => _mapController;
+  Completer<GoogleMapController> get mapControllerCompleter => _mapControllerCompleter;
   MapStateModel get mapState => _mapState;
   ExploredAreaModel get exploredAreas => _exploredAreas;
   AppSettingsModel get settings => _settings;
@@ -43,6 +43,13 @@ class MapViewModel extends ChangeNotifier {
 
   MapViewModel() {
     _initializeMap();
+  }
+
+  /// GoogleMapController'ı ayarla
+  void setMapController(GoogleMapController controller) {
+    if (!_mapControllerCompleter.isCompleted) {
+      _mapControllerCompleter.complete(controller);
+    }
   }
 
   /// Harita ve verileri başlat
@@ -81,12 +88,15 @@ class MapViewModel extends ChangeNotifier {
   }
 
   /// Harita merkezini güncelle
-  void updateMapCenter(LatLng center, {double? zoom}) {
+  Future<void> updateMapCenter(LatLng center, {double? zoom}) async {
     _mapState = _mapState.copyWith(center: center, zoom: zoom ?? _mapState.zoom);
 
     // MapController'ı sadece harita render edildikten sonra kullan
     try {
-      _mapController.move(center, _mapState.zoom);
+      if (_mapControllerCompleter.isCompleted) {
+        final controller = await _mapControllerCompleter.future;
+        controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: center, zoom: _mapState.zoom, bearing: _mapState.rotation)));
+      }
     } catch (e) {
       // MapController henüz hazır değil, sadece state'i güncelle
       debugPrint('MapController henüz hazır değil: $e');
@@ -96,11 +106,14 @@ class MapViewModel extends ChangeNotifier {
   }
 
   /// Harita zoom seviyesini güncelle
-  void updateMapZoom(double zoom) {
+  Future<void> updateMapZoom(double zoom) async {
     _mapState = _mapState.copyWith(zoom: zoom);
     if (_mapState.center != null) {
       try {
-        _mapController.move(_mapState.center!, zoom);
+        if (_mapControllerCompleter.isCompleted) {
+          final controller = await _mapControllerCompleter.future;
+          controller.animateCamera(CameraUpdate.zoomTo(zoom));
+        }
       } catch (e) {
         debugPrint('MapController henüz hazır değil: $e');
       }
@@ -109,11 +122,14 @@ class MapViewModel extends ChangeNotifier {
   }
 
   /// Harita rotasyonunu güncelle
-  void updateMapRotation(double rotation) {
+  Future<void> updateMapRotation(double rotation) async {
     _mapState = _mapState.copyWith(rotation: rotation);
     if (_mapState.center != null) {
       try {
-        _mapController.moveAndRotate(_mapState.center!, _mapState.zoom, rotation);
+        if (_mapControllerCompleter.isCompleted) {
+          final controller = await _mapControllerCompleter.future;
+          controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: _mapState.center!, zoom: _mapState.zoom, bearing: rotation)));
+        }
       } catch (e) {
         debugPrint('MapController henüz hazır değil: $e');
       }
@@ -146,15 +162,14 @@ class MapViewModel extends ChangeNotifier {
   }
 
   /// Konuma göre haritayı güncelle
-  void updateMapWithLocation(LocationModel location) {
+  Future<void> updateMapWithLocation(LocationModel location) async {
     _mapState = _mapState.copyWith(center: location.position);
 
     if (_mapState.isFollowingLocation) {
       try {
-        if (location.bearing != null) {
-          _mapController.moveAndRotate(location.position, _mapState.zoom, -location.bearing!);
-        } else {
-          _mapController.move(location.position, _mapState.zoom);
+        if (_mapControllerCompleter.isCompleted) {
+          final controller = await _mapControllerCompleter.future;
+          controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: location.position, zoom: _mapState.zoom, bearing: location.bearing ?? 0)));
         }
       } catch (e) {
         debugPrint('MapController henüz hazır değil: $e');

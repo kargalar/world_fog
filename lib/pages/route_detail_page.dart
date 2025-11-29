@@ -1,12 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
-import 'dart:async';
 
 class RouteDetailPage extends StatefulWidget {
   final RouteModel route;
@@ -23,15 +22,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
   int _currentPointIndex = 0;
   Timer? _simulationTimer;
   DateTime? _currentSimulationTime;
-  late MapController _mapController;
+  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
   bool _isSliderControlling = false;
   double _sliderValue = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _mapController = MapController();
-  }
 
   @override
   void dispose() {
@@ -53,7 +46,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     final startTime = widget.route.startTime;
     _currentSimulationTime = startTime;
 
-    _simulationTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+    _simulationTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (_currentPointIndex < widget.route.routePoints.length - 1 && !_isSliderControlling && !_isPaused) {
         setState(() {
           _currentPointIndex++;
@@ -65,7 +58,10 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
           _currentSimulationTime = startTime.add(Duration(seconds: elapsedSeconds));
         });
 
-        _mapController.move(widget.route.routePoints[_currentPointIndex].position, _mapController.camera.zoom);
+        if (_mapController.isCompleted) {
+          final controller = await _mapController.future;
+          controller.animateCamera(CameraUpdate.newLatLng(widget.route.routePoints[_currentPointIndex].position));
+        }
       } else if (!_isSliderControlling && _currentPointIndex >= widget.route.routePoints.length - 1) {
         _stopSimulation();
       }
@@ -95,7 +91,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     });
   }
 
-  void _onSliderChanged(double value) {
+  void _onSliderChanged(double value) async {
     setState(() {
       _sliderValue = value;
       _isSliderControlling = true;
@@ -109,11 +105,12 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         final elapsedSeconds = (totalDuration.inSeconds * value).round();
         _currentSimulationTime = startTime.add(Duration(seconds: elapsedSeconds));
       }
-
-      if (_currentPointIndex < widget.route.routePoints.length) {
-        _mapController.move(widget.route.routePoints[_currentPointIndex].position, _mapController.camera.zoom);
-      }
     });
+
+    if (_currentPointIndex < widget.route.routePoints.length && _mapController.isCompleted) {
+      final controller = await _mapController.future;
+      controller.animateCamera(CameraUpdate.newLatLng(widget.route.routePoints[_currentPointIndex].position));
+    }
   }
 
   void _onSliderChangeStart(double value) {
@@ -347,80 +344,112 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
           _buildElevationChart(),
           // Harita - Ana alan
           Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(initialCenter: widget.route.routePoints.isNotEmpty ? widget.route.routePoints.first.position : const LatLng(0, 0), initialZoom: 15.0, minZoom: 5.0, maxZoom: 18.0),
-              children: [
-                TileLayer(
-                  urlTemplate: Theme.of(context).brightness == Brightness.dark ? 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.world_fog',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                ),
-                // Keşfedilen alanlar
-                if (widget.route.exploredAreas.isNotEmpty) PolygonLayer(polygons: _createHeatmapPolygons()),
-                // Rota çizgisi
-                if (widget.route.routePoints.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(points: widget.route.routePoints.map((p) => p.position).toList(), color: Theme.of(context).brightness == Brightness.dark ? Colors.lightBlue.withAlpha(128) : Colors.blue.withAlpha(128), strokeWidth: 3.0),
-                      // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
-                      if ((_isSimulating || _sliderValue > 0) && _currentPointIndex > 0) Polyline(points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, strokeWidth: 5.0),
-                    ],
-                  ),
-                // Başlangıç ve bitiş noktaları
-                if (widget.route.routePoints.isNotEmpty)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: widget.route.routePoints.first.position,
-                        width: 24,
-                        height: 24,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(Icons.play_arrow, color: Colors.white, size: 16),
-                        ),
-                      ),
-                      if (widget.route.routePoints.length > 1)
-                        Marker(
-                          point: widget.route.routePoints.last.position,
-                          width: 24,
-                          height: 24,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const Icon(Icons.stop, color: Colors.white, size: 16),
-                          ),
-                        ),
-                      // Mevcut pozisyon markeri - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
-                      if ((_isSimulating || _sliderValue > 0) && _currentPointIndex < widget.route.routePoints.length)
-                        Marker(
-                          point: widget.route.routePoints[_currentPointIndex].position,
-                          width: 32,
-                          height: 32,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                            ),
-                            child: const Icon(Icons.navigation, color: Colors.white, size: 20),
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(target: widget.route.routePoints.isNotEmpty ? widget.route.routePoints.first.position : const LatLng(0, 0), zoom: 15.0),
+              onMapCreated: (GoogleMapController controller) {
+                if (!_mapController.isCompleted) {
+                  _mapController.complete(controller);
+                }
+              },
+              myLocationEnabled: false,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: true,
+              mapToolbarEnabled: false,
+              compassEnabled: true,
+              minMaxZoomPreference: const MinMaxZoomPreference(5.0, 18.0),
+              markers: _buildMarkers(),
+              polylines: _buildPolylines(),
+              polygons: _buildHeatmapPolygons(),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+
+    if (widget.route.routePoints.isEmpty) return markers;
+
+    // Başlangıç noktası
+    markers.add(
+      Marker(
+        markerId: const MarkerId('start'),
+        position: widget.route.routePoints.first.position,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(title: 'Başlangıç'),
+      ),
+    );
+
+    // Bitiş noktası
+    if (widget.route.routePoints.length > 1) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('end'),
+          position: widget.route.routePoints.last.position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Bitiş'),
+        ),
+      );
+    }
+
+    // Mevcut pozisyon markeri - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
+    if ((_isSimulating || _sliderValue > 0) && _currentPointIndex < widget.route.routePoints.length) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current'),
+          position: widget.route.routePoints[_currentPointIndex].position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          infoWindow: const InfoWindow(title: 'Mevcut Konum'),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines() {
+    final polylines = <Polyline>{};
+
+    if (widget.route.routePoints.isEmpty) return polylines;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Tüm rota çizgisi
+    polylines.add(Polyline(polylineId: const PolylineId('route'), points: widget.route.routePoints.map((p) => p.position).toList(), color: isDarkMode ? Colors.lightBlue.withAlpha(128) : Colors.blue.withAlpha(128), width: 3));
+
+    // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
+    if ((_isSimulating || _sliderValue > 0) && _currentPointIndex > 0) {
+      polylines.add(Polyline(polylineId: const PolylineId('completed'), points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, width: 5));
+    }
+
+    return polylines;
+  }
+
+  Set<Polygon> _buildHeatmapPolygons() {
+    final polygons = <Polygon>{};
+
+    for (int i = 0; i < widget.route.exploredAreas.length; i++) {
+      final area = widget.route.exploredAreas[i];
+
+      int frequency = 0;
+      for (final otherArea in widget.route.exploredAreas) {
+        if (area != otherArea) {
+          final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
+          if (distance < 60) {
+            frequency++;
+          }
+        }
+      }
+
+      final color = _getColorForFrequency(frequency);
+      final polygonPoints = _createHexagonPoints(area, 30.0);
+
+      polygons.add(Polygon(polygonId: PolygonId('heatmap_$i'), points: polygonPoints, fillColor: color.withAlpha(80), strokeColor: color.withAlpha(100), strokeWidth: 1));
+    }
+
+    return polygons;
   }
 
   Widget _buildCompactInfo(String value, IconData icon, Color color) {
@@ -460,30 +489,5 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     }
 
     return points;
-  }
-
-  List<Polygon> _createHeatmapPolygons() {
-    final polygons = <Polygon>[];
-
-    for (int i = 0; i < widget.route.exploredAreas.length; i++) {
-      final area = widget.route.exploredAreas[i];
-
-      int frequency = 0;
-      for (final otherArea in widget.route.exploredAreas) {
-        if (area != otherArea) {
-          final distance = Geolocator.distanceBetween(area.latitude, area.longitude, otherArea.latitude, otherArea.longitude);
-          if (distance < 60) {
-            frequency++;
-          }
-        }
-      }
-
-      final color = _getColorForFrequency(frequency);
-      final polygonPoints = _createHexagonPoints(area, 30.0);
-
-      polygons.add(Polygon(points: polygonPoints, color: color.withAlpha(80), borderColor: color.withAlpha(100), borderStrokeWidth: 1));
-    }
-
-    return polygons;
   }
 }

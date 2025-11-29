@@ -31,7 +31,7 @@ class RouteStatsCard extends StatelessWidget {
               children: [
                 _buildStatItem('Distance', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
                 _buildStatItem('Duration', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
-                if (isPaused || currentBreakDuration.inSeconds > 0) _buildStatItem('Break', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
+                _buildStatItem('Break', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
               ],
             ),
           ],
@@ -69,7 +69,7 @@ class RouteStatsCard extends StatelessWidget {
     final seconds = duration.inSeconds % 60;
 
     if (hours > 0) {
-      return '${hours}s ${minutes.toString().padLeft(2, '0')}d';
+      return '${hours}s ${minutes.toString().padLeft(2, '0')}d ${seconds.toString().padLeft(2, '0')}s';
     } else if (minutes > 0) {
       return '${minutes}d ${seconds.toString().padLeft(2, '0')}s';
     } else {

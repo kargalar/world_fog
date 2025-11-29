@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
-import '../models/route_model.dart';
 import '../pages/profile_page.dart';
 import '../pages/settings_page.dart';
 import '../utils/app_strings.dart';
-
-import 'grid_painter_widget.dart';
 
 /// Ana harita widget'ı
 class MainMapWidget extends StatelessWidget {
@@ -28,97 +24,107 @@ class MainMapWidget extends StatelessWidget {
           );
         }
 
-        return FlutterMap(
-          mapController: mapVM.mapController,
-          options: MapOptions(
-            initialCenter: currentLocation.position,
-            initialZoom: mapVM.zoom,
-            minZoom: 5.0,
-            maxZoom: 18.0,
-            onMapEvent: (event) {
-              // Kullanıcı haritayı manuel hareket ettirirse otomatik takibi kapat
-              if (event is MapEventMoveStart && mapVM.isFollowingLocation) {
-                mapVM.setLocationFollowing(false);
-              }
-            },
-          ),
-          children: [
-            // Tile Layer
-            TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.example.world_fog', subdomains: const ['a', 'b', 'c', 'd']),
-
-            // Keşfedilen gridler
-            if (mapVM.exploredGrids.isNotEmpty)
-              GridPainterWidget(
-                exploredGrids: mapVM.exploredGrids,
-                gridSizeDegrees: 0.0032, // 0.125km² için
-                mapController: mapVM.mapController,
-              ),
-
-            // Aktif rota keşif alanları - Yeşil sis efekti
-            // TODO: Rota için grid sistemi eklenebilir
-
-            // Geçmiş rotalar
-            if (mapVM.showPastRoutes && routeVM.pastRoutes.isNotEmpty) _buildPastRoutesLayer(routeVM.pastRoutes),
-
-            // Mevcut rota
-            if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty) _buildCurrentRouteLayer(routeVM.currentRoutePoints),
-
-            // Marker layer
-            MarkerLayer(
-              markers: [
-                // Mevcut konum markeri
-                Marker(
-                  point: currentLocation.position,
-                  width: 32,
-                  height: 32,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))],
-                    ),
-                    child: Icon(mapVM.isFollowingLocation ? Icons.navigation : Icons.my_location, color: Colors.white, size: 20),
-                  ),
-                ),
-
-                // Rota başlangıç markeri
-                if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty)
-                  Marker(
-                    point: routeVM.currentRoutePoints.first.position,
-                    width: 24,
-                    height: 24,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(Icons.play_arrow, color: Colors.white, size: 16),
-                    ),
-                  ),
-              ],
-            ),
-          ],
+        return GoogleMap(
+          initialCameraPosition: CameraPosition(target: currentLocation.position, zoom: mapVM.zoom),
+          onMapCreated: (GoogleMapController controller) {
+            mapVM.setMapController(controller);
+          },
+          myLocationEnabled: false, // Kendi markerımızı kullanacağız
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          compassEnabled: true,
+          minMaxZoomPreference: const MinMaxZoomPreference(5.0, 18.0),
+          onCameraMove: (CameraPosition position) {
+            // Kullanıcı haritayı manuel hareket ettirirse otomatik takibi kapat
+            if (mapVM.isFollowingLocation) {
+              mapVM.setLocationFollowing(false);
+            }
+          },
+          markers: _buildMarkers(currentLocation.position, routeVM, mapVM),
+          polylines: _buildPolylines(routeVM, mapVM),
+          polygons: _buildGridPolygons(mapVM),
         );
       },
     );
   }
 
-  /// Geçmiş rotaları çizen layer
-  Widget _buildPastRoutesLayer(List<RouteModel> routes) {
-    return PolylineLayer(
-      polylines: routes.map((route) {
-        return Polyline(points: route.routePoints.map((point) => point.position).toList(), strokeWidth: 4.0, color: Colors.yellow);
-      }).toList(),
+  /// Marker'ları oluştur
+  Set<Marker> _buildMarkers(LatLng currentPosition, RouteViewModel routeVM, MapViewModel mapVM) {
+    final markers = <Marker>{};
+
+    // Mevcut konum markeri
+    markers.add(
+      Marker(
+        markerId: const MarkerId('current_location'),
+        position: currentPosition,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'Konumunuz'),
+      ),
     );
+
+    // Rota başlangıç markeri
+    if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('route_start'),
+          position: routeVM.currentRoutePoints.first.position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: const InfoWindow(title: 'Başlangıç'),
+        ),
+      );
+    }
+
+    return markers;
   }
 
-  /// Mevcut rotayı çizen layer
-  Widget _buildCurrentRouteLayer(List<RoutePoint> routePoints) {
-    return PolylineLayer(
-      polylines: [Polyline(points: routePoints.map((point) => point.position).toList(), strokeWidth: 4.0, color: Colors.red)],
-    );
+  /// Polyline'ları oluştur
+  Set<Polyline> _buildPolylines(RouteViewModel routeVM, MapViewModel mapVM) {
+    final polylines = <Polyline>{};
+
+    // Geçmiş rotalar
+    if (mapVM.showPastRoutes && routeVM.pastRoutes.isNotEmpty) {
+      for (int i = 0; i < routeVM.pastRoutes.length; i++) {
+        final route = routeVM.pastRoutes[i];
+        polylines.add(Polyline(polylineId: PolylineId('past_route_$i'), points: route.routePoints.map((point) => point.position).toList(), color: Colors.yellow, width: 4));
+      }
+    }
+
+    // Mevcut rota
+    if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty) {
+      polylines.add(Polyline(polylineId: const PolylineId('current_route'), points: routeVM.currentRoutePoints.map((point) => point.position).toList(), color: Colors.red, width: 4));
+    }
+
+    return polylines;
+  }
+
+  /// Grid polygon'larını oluştur
+  Set<Polygon> _buildGridPolygons(MapViewModel mapVM) {
+    final polygons = <Polygon>{};
+    const gridSizeDegrees = 0.0032;
+
+    int index = 0;
+    for (final gridKey in mapVM.exploredGrids) {
+      final parts = gridKey.split('_');
+      if (parts.length != 2) continue;
+
+      try {
+        final latGrid = int.parse(parts[0]);
+        final lngGrid = int.parse(parts[1]);
+
+        final minLat = latGrid * gridSizeDegrees;
+        final maxLat = (latGrid + 1) * gridSizeDegrees;
+        final minLng = lngGrid * gridSizeDegrees;
+        final maxLng = (lngGrid + 1) * gridSizeDegrees;
+
+        polygons.add(Polygon(polygonId: PolygonId('grid_$index'), points: [LatLng(minLat, minLng), LatLng(maxLat, minLng), LatLng(maxLat, maxLng), LatLng(minLat, maxLng)], fillColor: Colors.blue.withOpacity(0.2), strokeColor: Colors.blue.withOpacity(0.5), strokeWidth: 1));
+        index++;
+      } catch (e) {
+        continue;
+      }
+    }
+
+    return polygons;
   }
 }
 
@@ -202,7 +208,7 @@ class MapControlButtons extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: IconButton(
           icon: Icon(icon, color: iconColor),
