@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
+import '../widgets/waypoint_dialog.dart';
 
 class RouteDetailPage extends StatefulWidget {
   final RouteModel route;
@@ -292,14 +293,33 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   children: [
                     _buildCompactInfo(widget.route.formattedDistance, Icons.straighten, Colors.blue),
                     _buildCompactInfo(widget.route.formattedDuration, Icons.timer, Colors.green),
+                    _buildCompactInfo(widget.route.formattedAverageSpeed, Icons.speed, Colors.purple),
                     if (widget.route.totalBreakTime.inSeconds > 0) _buildCompactInfo(widget.route.formattedBreakTime, Icons.coffee, Colors.brown),
-                    _buildCompactInfo('${widget.route.exploredAreas.length}', Icons.location_on, Colors.orange),
                   ],
                 ),
-                // İniş/Çıkış bilgileri (sadece yükseklik verisi varsa)
-                if (_hasElevationData) ...[
+                // Hava durumu ve puan bilgisi
+                if (widget.route.weather != null || widget.route.rating != null) ...[
                   const SizedBox(height: 4),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [_buildCompactInfo('↗ ${_totalAscent.toStringAsFixed(0)}m', Icons.trending_up, Colors.green), _buildCompactInfo('↘ ${_totalDescent.toStringAsFixed(0)}m', Icons.trending_down, Colors.red)]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.route.weather != null) ...[
+                        Icon(_getWeatherIcon(widget.route.weather!.condition), size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(widget.route.weather!.conditionLabel + (widget.route.weather!.temperature != null ? ' ${widget.route.weather!.temperature!.toStringAsFixed(0)}°C' : ''), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        const SizedBox(width: 12),
+                      ],
+                      if (widget.route.rating != null) ...[...List.generate(widget.route.rating!, (index) => const Icon(Icons.star, size: 14, color: Colors.amber)), ...List.generate(5 - widget.route.rating!, (index) => const Icon(Icons.star_border, size: 14, color: Colors.grey))],
+                    ],
+                  ),
+                ],
+                // İniş/Çıkış bilgileri (sadece yükseklik verisi varsa)
+                if (_hasElevationData || widget.route.totalAscent > 0 || widget.route.totalDescent > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [_buildCompactInfo(widget.route.formattedAscent, Icons.trending_up, Colors.green), _buildCompactInfo(widget.route.formattedDescent, Icons.trending_down, Colors.red), _buildCompactInfo('${widget.route.waypoints.length}', Icons.photo_camera, Colors.deepPurple)],
+                  ),
                 ],
                 // Simülasyon kontrolü
                 if (widget.route.routePoints.isNotEmpty) ...[
@@ -406,7 +426,44 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
       );
     }
 
+    // Waypoint markerları
+    for (final waypoint in widget.route.waypoints) {
+      markers.add(
+        Marker(
+          markerId: MarkerId('waypoint_${waypoint.id}'),
+          position: waypoint.position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(_getWaypointHue(waypoint.type)),
+          infoWindow: InfoWindow(title: waypoint.typeLabel),
+          onTap: () => _showWaypointDetail(waypoint),
+        ),
+      );
+    }
+
     return markers;
+  }
+
+  double _getWaypointHue(WaypointType type) {
+    switch (type) {
+      case WaypointType.scenery:
+        return BitmapDescriptor.hueGreen;
+      case WaypointType.fountain:
+        return BitmapDescriptor.hueBlue;
+      case WaypointType.junction:
+        return BitmapDescriptor.hueOrange;
+      case WaypointType.waterfall:
+        return BitmapDescriptor.hueCyan;
+      case WaypointType.other:
+        return BitmapDescriptor.hueViolet;
+    }
+  }
+
+  void _showWaypointDetail(RouteWaypoint waypoint) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => WaypointDetailSheet(waypoint: waypoint),
+    );
   }
 
   Set<Polyline> _buildPolylines() {
@@ -464,6 +521,23 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         ),
       ],
     );
+  }
+
+  IconData _getWeatherIcon(WeatherCondition condition) {
+    switch (condition) {
+      case WeatherCondition.sunny:
+        return Icons.wb_sunny;
+      case WeatherCondition.cloudy:
+        return Icons.cloud;
+      case WeatherCondition.rainy:
+        return Icons.umbrella;
+      case WeatherCondition.snowy:
+        return Icons.ac_unit;
+      case WeatherCondition.windy:
+        return Icons.air;
+      case WeatherCondition.foggy:
+        return Icons.foggy;
+    }
   }
 
   String _formatTime(DateTime time) {

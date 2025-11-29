@@ -17,6 +17,7 @@ class MapViewModel extends ChangeNotifier {
   AppSettingsModel _settings = const AppSettingsModel();
   bool _isLoading = false;
   String? _errorMessage;
+  MapType _mapType = MapType.normal;
 
   // Grid boyutu: 0.125km² için yaklaşık 0.0032 derece (354m / 111320m)
   static const double _gridSizeDegrees = 0.0032;
@@ -28,6 +29,7 @@ class MapViewModel extends ChangeNotifier {
   AppSettingsModel get settings => _settings;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  MapType get mapType => _mapType;
 
   // Map state getters
   LatLng? get center => _mapState.center;
@@ -158,6 +160,12 @@ class MapViewModel extends ChangeNotifier {
   /// Geçmiş rotaları göstermeyi ayarla
   void setPastRoutesVisibility(bool show) {
     _mapState = _mapState.copyWith(showPastRoutes: show);
+    notifyListeners();
+  }
+
+  /// Harita tipini değiştir
+  void setMapType(MapType type) {
+    _mapType = type;
     notifyListeners();
   }
 

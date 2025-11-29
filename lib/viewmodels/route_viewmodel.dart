@@ -5,10 +5,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/route_model.dart';
 import '../models/location_model.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 
 /// Rota işlemlerini yöneten ViewModel
 class RouteViewModel extends ChangeNotifier {
   final StorageService _storageService = StorageService();
+  final NotificationService _notificationService = NotificationService();
 
   // Grid exploration callback - Rotanın üzerindeki gridleri keşfetmek için
   Function(LatLng from, LatLng to)? _onRoutePointsAdded;
@@ -25,8 +27,12 @@ class RouteViewModel extends ChangeNotifier {
   // Route data
   final List<RoutePoint> _currentRoutePoints = [];
   final List<LatLng> _currentRouteExploredAreas = [];
+  final List<RouteWaypoint> _currentWaypoints = [];
   double _currentRouteDistance = 0.0;
   Duration _currentRouteDuration = Duration.zero;
+  double _totalAscent = 0.0;
+  double _totalDescent = 0.0;
+  double _lastAltitude = 0.0;
 
   // Timers
   Timer? _durationTimer;
@@ -49,9 +55,24 @@ class RouteViewModel extends ChangeNotifier {
   // Getters - Route data
   List<RoutePoint> get currentRoutePoints => List.unmodifiable(_currentRoutePoints);
   List<LatLng> get currentRouteExploredAreas => List.unmodifiable(_currentRouteExploredAreas);
+  List<RouteWaypoint> get currentWaypoints => List.unmodifiable(_currentWaypoints);
   double get currentRouteDistance => _currentRouteDistance;
   Duration get currentRouteDuration => _currentRouteDuration;
   int get currentRoutePointsCount => _currentRoutePoints.length;
+  double get totalAscent => _totalAscent;
+  double get totalDescent => _totalDescent;
+
+  // Ortalama hız (km/h)
+  double get currentAverageSpeed {
+    if (_currentRouteDuration.inSeconds == 0) return 0.0;
+    final movingDuration = _currentRouteDuration - _totalPausedTime;
+    if (movingDuration.inSeconds == 0) return 0.0;
+    return (_currentRouteDistance / 1000) / (movingDuration.inSeconds / 3600);
+  }
+
+  String get formattedAverageSpeed {
+    return '${currentAverageSpeed.toStringAsFixed(1)} km/h';
+  }
 
   // Getters - Past routes
   List<RouteModel> get pastRoutes => List.unmodifiable(_pastRoutes);
@@ -84,8 +105,12 @@ class RouteViewModel extends ChangeNotifier {
     _currentRouteDuration = Duration.zero;
     _totalPausedTime = Duration.zero;
     _currentBreakDuration = Duration.zero;
+    _totalAscent = 0.0;
+    _totalDescent = 0.0;
+    _lastAltitude = 0.0;
     _currentRoutePoints.clear();
     _currentRouteExploredAreas.clear();
+    _currentWaypoints.clear();
 
     // Başlangıç noktasını ekle
     if (initialPosition != null) {
@@ -94,6 +119,9 @@ class RouteViewModel extends ChangeNotifier {
 
     // Süre sayacını başlat
     _startDurationTimer();
+
+    // Bildirim servisini başlat
+    _notificationService.startRouteNotification();
 
     _errorMessage = null;
     notifyListeners();
@@ -109,6 +137,9 @@ class RouteViewModel extends ChangeNotifier {
 
     // Mola sayacını başlat
     _startBreakTimer();
+
+    // Bildirimi duraklat
+    _notificationService.pauseRouteNotification();
 
     notifyListeners();
   }
@@ -131,6 +162,9 @@ class RouteViewModel extends ChangeNotifier {
     // Mola sayacını durdur
     _breakTimer?.cancel();
 
+    // Bildirimi devam ettir (mola hariç geçen süre ile)
+    _notificationService.resumeRouteNotification(_currentRouteDuration);
+
     notifyListeners();
   }
 
@@ -141,6 +175,9 @@ class RouteViewModel extends ChangeNotifier {
     // Timers'ı durdur
     _durationTimer?.cancel();
     _breakTimer?.cancel();
+
+    // Bildirim servisini durdur
+    _notificationService.stopRouteNotification();
 
     // Son mola süresini hesapla
     if (_isPaused && _pauseStartTime != null) {
@@ -155,9 +192,12 @@ class RouteViewModel extends ChangeNotifier {
         name: 'Rota ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
         routePoints: List.from(_currentRoutePoints),
         exploredAreas: List.from(_currentRouteExploredAreas),
+        waypoints: List.from(_currentWaypoints),
         totalDistance: _currentRouteDistance,
         totalDuration: _currentRouteDuration,
         totalBreakTime: _totalPausedTime,
+        totalAscent: _totalAscent,
+        totalDescent: _totalDescent,
         startTime: _routeStartTime!,
         endTime: DateTime.now(),
       );
@@ -172,12 +212,15 @@ class RouteViewModel extends ChangeNotifier {
   }
 
   /// Rota takibini durdur ve özel isimle kaydet
-  Future<void> stopTrackingWithName(String name) async {
-    if (!_isTracking) return;
+  Future<RouteModel?> stopTrackingWithName(String name, {WeatherInfo? weather, int? rating}) async {
+    if (!_isTracking) return null;
 
     // Timers'ı durdur
     _durationTimer?.cancel();
     _breakTimer?.cancel();
+
+    // Bildirim servisini durdur
+    _notificationService.stopRouteNotification();
 
     // Son mola süresini hesapla
     if (_isPaused && _pauseStartTime != null) {
@@ -185,27 +228,36 @@ class RouteViewModel extends ChangeNotifier {
       _totalPausedTime += pauseDuration;
     }
 
+    RouteModel? savedRoute;
+
     // Rota modelini oluştur
     if (_routeStartTime != null && _currentRoutePoints.isNotEmpty) {
-      final route = RouteModel(
+      savedRoute = RouteModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
         routePoints: List.from(_currentRoutePoints),
         exploredAreas: List.from(_currentRouteExploredAreas),
+        waypoints: List.from(_currentWaypoints),
         totalDistance: _currentRouteDistance,
         totalDuration: _currentRouteDuration,
         totalBreakTime: _totalPausedTime,
+        totalAscent: _totalAscent,
+        totalDescent: _totalDescent,
+        weather: weather,
+        rating: rating,
         startTime: _routeStartTime!,
         endTime: DateTime.now(),
       );
 
       // Rotayı kaydet
-      await saveRoute(route);
+      await saveRoute(savedRoute);
     }
 
     // State'i sıfırla
     _resetRouteState();
     notifyListeners();
+
+    return savedRoute;
   }
 
   /// Yeni konum noktası ekle
@@ -213,6 +265,7 @@ class RouteViewModel extends ChangeNotifier {
     if (!_isTracking || _isPaused) return;
 
     LatLng? lastPointPosition;
+    double currentAltitude = location.altitude ?? 0.0;
 
     // Mesafe hesapla
     if (_currentRoutePoints.isNotEmpty) {
@@ -220,22 +273,44 @@ class RouteViewModel extends ChangeNotifier {
       lastPointPosition = lastPoint.position;
       final distance = _calculateDistance(lastPoint.position, location.position);
       _currentRouteDistance += distance;
+
+      // Yükseklik değişimini hesapla
+      if (_lastAltitude > 0 && currentAltitude > 0) {
+        final altitudeDiff = currentAltitude - _lastAltitude;
+        if (altitudeDiff > 0) {
+          _totalAscent += altitudeDiff;
+        } else {
+          _totalDescent += altitudeDiff.abs();
+        }
+      }
     }
 
+    _lastAltitude = currentAltitude;
+
     // Yeni noktayı ekle
-    _currentRoutePoints.add(
-      RoutePoint(
-        position: location.position,
-        altitude: 0.0, // LocationModel'den altitude bilgisi alınabilir
-        timestamp: DateTime.now(),
-      ),
-    );
+    _currentRoutePoints.add(RoutePoint(position: location.position, altitude: currentAltitude, timestamp: DateTime.now()));
 
     // Rotanın üzerindeki gridleri keşfet (bir önceki noktadan mevcut noktaya kadar)
     if (lastPointPosition != null && _onRoutePointsAdded != null) {
       _onRoutePointsAdded!(lastPointPosition, location.position);
     }
 
+    // Bildirimi güncelle
+    _notificationService.updateRouteNotification(_currentRouteDuration);
+
+    notifyListeners();
+  }
+
+  /// Waypoint (fotoğraf işareti) ekle
+  void addWaypoint(RouteWaypoint waypoint) {
+    if (!_isTracking) return;
+    _currentWaypoints.add(waypoint);
+    notifyListeners();
+  }
+
+  /// Waypoint sil
+  void removeWaypoint(String waypointId) {
+    _currentWaypoints.removeWhere((w) => w.id == waypointId);
     notifyListeners();
   }
 
@@ -336,8 +411,12 @@ class RouteViewModel extends ChangeNotifier {
     _currentBreakDuration = Duration.zero;
     _currentRouteDistance = 0.0;
     _currentRouteDuration = Duration.zero;
+    _totalAscent = 0.0;
+    _totalDescent = 0.0;
+    _lastAltitude = 0.0;
     _currentRoutePoints.clear();
     _currentRouteExploredAreas.clear();
+    _currentWaypoints.clear();
     _durationTimer?.cancel();
     _breakTimer?.cancel();
   }

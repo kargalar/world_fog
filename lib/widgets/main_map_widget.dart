@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import '../models/route_model.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../pages/profile_page.dart';
 import '../pages/settings_page.dart';
 import '../utils/app_strings.dart';
+import 'waypoint_dialog.dart';
 
 /// Ana harita widget'ı
 class MainMapWidget extends StatelessWidget {
@@ -29,6 +31,7 @@ class MainMapWidget extends StatelessWidget {
           onMapCreated: (GoogleMapController controller) {
             mapVM.setMapController(controller);
           },
+          mapType: mapVM.mapType,
           myLocationEnabled: false, // Kendi markerımızı kullanacağız
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
@@ -41,7 +44,7 @@ class MainMapWidget extends StatelessWidget {
               mapVM.setLocationFollowing(false);
             }
           },
-          markers: _buildMarkers(currentLocation.position, routeVM, mapVM),
+          markers: _buildMarkers(context, currentLocation.position, routeVM, mapVM),
           polylines: _buildPolylines(routeVM, mapVM),
           polygons: _buildGridPolygons(mapVM),
         );
@@ -50,7 +53,7 @@ class MainMapWidget extends StatelessWidget {
   }
 
   /// Marker'ları oluştur
-  Set<Marker> _buildMarkers(LatLng currentPosition, RouteViewModel routeVM, MapViewModel mapVM) {
+  Set<Marker> _buildMarkers(BuildContext context, LatLng currentPosition, RouteViewModel routeVM, MapViewModel mapVM) {
     final markers = <Marker>{};
 
     // Mevcut konum markeri
@@ -75,7 +78,54 @@ class MainMapWidget extends StatelessWidget {
       );
     }
 
+    // Waypoint markerları
+    if (routeVM.isTracking) {
+      for (final waypoint in routeVM.currentWaypoints) {
+        markers.add(
+          Marker(
+            markerId: MarkerId('waypoint_${waypoint.id}'),
+            position: waypoint.position,
+            icon: BitmapDescriptor.defaultMarkerWithHue(_getWaypointHue(waypoint.type)),
+            infoWindow: InfoWindow(title: waypoint.typeLabel),
+            onTap: () {
+              _showWaypointDetail(context, waypoint, routeVM);
+            },
+          ),
+        );
+      }
+    }
+
     return markers;
+  }
+
+  double _getWaypointHue(WaypointType type) {
+    switch (type) {
+      case WaypointType.scenery:
+        return BitmapDescriptor.hueGreen;
+      case WaypointType.fountain:
+        return BitmapDescriptor.hueBlue;
+      case WaypointType.junction:
+        return BitmapDescriptor.hueOrange;
+      case WaypointType.waterfall:
+        return BitmapDescriptor.hueCyan;
+      case WaypointType.other:
+        return BitmapDescriptor.hueViolet;
+    }
+  }
+
+  void _showWaypointDetail(BuildContext context, RouteWaypoint waypoint, RouteViewModel routeVM) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => WaypointDetailSheet(
+        waypoint: waypoint,
+        onDelete: () {
+          Navigator.pop(context);
+          routeVM.removeWaypoint(waypoint.id);
+        },
+      ),
+    );
   }
 
   /// Polyline'ları oluştur
@@ -117,7 +167,7 @@ class MainMapWidget extends StatelessWidget {
         final minLng = lngGrid * gridSizeDegrees;
         final maxLng = (lngGrid + 1) * gridSizeDegrees;
 
-        polygons.add(Polygon(polygonId: PolygonId('grid_$index'), points: [LatLng(minLat, minLng), LatLng(maxLat, minLng), LatLng(maxLat, maxLng), LatLng(minLat, maxLng)], fillColor: Colors.blue.withOpacity(0.2), strokeColor: Colors.blue.withOpacity(0.5), strokeWidth: 1));
+        polygons.add(Polygon(polygonId: PolygonId('grid_$index'), points: [LatLng(minLat, minLng), LatLng(maxLat, minLng), LatLng(maxLat, maxLng), LatLng(minLat, maxLng)], fillColor: Colors.blue.withValues(alpha: 0.2), strokeColor: Colors.blue.withValues(alpha: 0.5), strokeWidth: 1));
         index++;
       } catch (e) {
         continue;
@@ -138,9 +188,14 @@ class MapControlButtons extends StatelessWidget {
       builder: (context, locationVM, mapVM, child) {
         return Positioned(
           right: 16,
-          bottom: 20,
+          bottom: 90,
           child: Column(
             children: [
+              // Map type button
+              _buildControlButton(icon: _getMapTypeIcon(mapVM.mapType), onPressed: () => _showMapTypeSelector(context, mapVM), backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: 'Harita Görünümü'),
+
+              const SizedBox(height: 8),
+
               // Location follow button
               _buildControlButton(
                 icon: mapVM.isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed,
@@ -201,6 +256,81 @@ class MapControlButtons extends StatelessWidget {
     );
   }
 
+  IconData _getMapTypeIcon(MapType mapType) {
+    switch (mapType) {
+      case MapType.normal:
+        return Icons.map;
+      case MapType.satellite:
+        return Icons.satellite;
+      case MapType.terrain:
+        return Icons.terrain;
+      case MapType.hybrid:
+        return Icons.layers;
+      default:
+        return Icons.map;
+    }
+  }
+
+  void _showMapTypeSelector(BuildContext context, MapViewModel mapVM) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Harita Görünümü', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _buildMapTypeOption(context, mapVM, MapType.normal, 'Normal', Icons.map),
+                _buildMapTypeOption(context, mapVM, MapType.satellite, 'Uydu', Icons.satellite),
+                _buildMapTypeOption(context, mapVM, MapType.terrain, 'Arazi', Icons.terrain),
+                _buildMapTypeOption(context, mapVM, MapType.hybrid, 'Hibrit', Icons.layers),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapTypeOption(BuildContext context, MapViewModel mapVM, MapType type, String label, IconData icon) {
+    final isSelected = mapVM.mapType == type;
+    return InkWell(
+      onTap: () {
+        mapVM.setMapType(type);
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 80,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? Theme.of(context).primaryColor : Colors.transparent, width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: isSelected ? Theme.of(context).primaryColor : Colors.grey),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Theme.of(context).primaryColor : Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildControlButton({required IconData icon, required VoidCallback onPressed, required Color backgroundColor, required Color iconColor, required String tooltip}) {
     return Tooltip(
       message: tooltip,
@@ -208,7 +338,7 @@ class MapControlButtons extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: IconButton(
           icon: Icon(icon, color: iconColor),

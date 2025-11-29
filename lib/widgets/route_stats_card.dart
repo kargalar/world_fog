@@ -6,8 +6,11 @@ class RouteStatsCard extends StatelessWidget {
   final Duration currentRouteDuration;
   final Duration currentBreakDuration;
   final bool isPaused;
+  final double averageSpeed;
+  final double totalAscent;
+  final double totalDescent;
 
-  const RouteStatsCard({super.key, required this.currentRouteDistance, required this.currentRouteDuration, required this.currentBreakDuration, required this.isPaused});
+  const RouteStatsCard({super.key, required this.currentRouteDistance, required this.currentRouteDuration, required this.currentBreakDuration, required this.isPaused, this.averageSpeed = 0.0, this.totalAscent = 0.0, this.totalDescent = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +26,37 @@ class RouteStatsCard extends StatelessWidget {
                 Icon(Icons.route, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
                 Text(AppStrings.activeRoute, style: Theme.of(context).textTheme.titleLarge),
+                if (isPaused) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
+                    child: const Text(
+                      'Durakladı',
+                      style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // İlk satır: Mesafe, Süre, Mola
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('Distance', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
-                _buildStatItem('Duration', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
-                _buildStatItem('Break', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
+                _buildStatItem('Mesafe', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
+                _buildStatItem('Süre', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
+                _buildStatItem('Mola', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // İkinci satır: Ortalama Hız, Çıkış, İniş
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('Ort. Hız', '${averageSpeed.toStringAsFixed(1)} km/h', Icons.speed, Colors.purple),
+                _buildStatItem('Çıkış', '${totalAscent.toStringAsFixed(0)}m', Icons.trending_up, Colors.green),
+                _buildStatItem('İniş', '${totalDescent.toStringAsFixed(0)}m', Icons.trending_down, Colors.red),
               ],
             ),
           ],
@@ -43,13 +68,13 @@ class RouteStatsCard extends StatelessWidget {
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Icon(icon, color: color, size: 20),
         const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        const SizedBox(height: 1),
         Text(
           value,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
         ),
       ],
     );

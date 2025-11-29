@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/route_model.dart';
 import '../utils/app_strings.dart';
 
 /// Route name dialog
@@ -6,9 +7,12 @@ class RouteNameDialog extends StatefulWidget {
   final double distance;
   final Duration duration;
   final int pointsCount;
-  final Future<void> Function(String) onSave;
+  final double totalAscent;
+  final double totalDescent;
+  final double averageSpeed;
+  final Future<void> Function(String name, WeatherInfo? weather, int? rating) onSave;
 
-  const RouteNameDialog({super.key, required this.distance, required this.duration, required this.pointsCount, required this.onSave});
+  const RouteNameDialog({super.key, required this.distance, required this.duration, required this.pointsCount, this.totalAscent = 0.0, this.totalDescent = 0.0, this.averageSpeed = 0.0, required this.onSave});
 
   @override
   State<RouteNameDialog> createState() => _RouteNameDialogState();
@@ -16,7 +20,11 @@ class RouteNameDialog extends StatefulWidget {
 
 class _RouteNameDialogState extends State<RouteNameDialog> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _temperatureController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  WeatherCondition? _selectedWeather;
+  int _rating = 0;
 
   @override
   void initState() {
@@ -32,6 +40,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _temperatureController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -54,6 +63,40 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
     }
   }
 
+  IconData _getWeatherIcon(WeatherCondition condition) {
+    switch (condition) {
+      case WeatherCondition.sunny:
+        return Icons.wb_sunny;
+      case WeatherCondition.cloudy:
+        return Icons.cloud;
+      case WeatherCondition.rainy:
+        return Icons.umbrella;
+      case WeatherCondition.snowy:
+        return Icons.ac_unit;
+      case WeatherCondition.windy:
+        return Icons.air;
+      case WeatherCondition.foggy:
+        return Icons.foggy;
+    }
+  }
+
+  Color _getWeatherColor(WeatherCondition condition) {
+    switch (condition) {
+      case WeatherCondition.sunny:
+        return Colors.orange;
+      case WeatherCondition.cloudy:
+        return Colors.grey;
+      case WeatherCondition.rainy:
+        return Colors.blue;
+      case WeatherCondition.snowy:
+        return Colors.lightBlue;
+      case WeatherCondition.windy:
+        return Colors.teal;
+      case WeatherCondition.foggy:
+        return Colors.blueGrey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -62,96 +105,223 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       child: Container(
         padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Başlık
-            Row(
-              children: [
-                Icon(Icons.route, color: Theme.of(context).colorScheme.primary, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  'Save Route',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Rota detayları
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Başlık
+              Row(
                 children: [
+                  Icon(Icons.route, color: Theme.of(context).colorScheme.primary, size: 28),
+                  const SizedBox(width: 12),
                   Text(
-                    'Route Details',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+                    'Rotayı Kaydet',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                   ),
-                  const SizedBox(height: 12),
-                  _buildDetailRow(Icons.straighten, 'Distance', _formatDistance(widget.distance)),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.access_time, 'Duration', _formatDuration(widget.duration)),
-                  const SizedBox(height: 8),
-                  _buildDetailRow(Icons.location_on, 'Point Count', '${widget.pointsCount}'),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Name input
-            TextField(
-              controller: _nameController,
-              focusNode: _focusNode,
-              decoration: InputDecoration(
-                labelText: AppStrings.routeName,
-                hintText: 'Enter a name for your route',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.edit),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
+              // Rota detayları
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rota Detayları',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(Icons.straighten, 'Mesafe', _formatDistance(widget.distance)),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(Icons.access_time, 'Süre', _formatDuration(widget.duration)),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(Icons.speed, 'Ort. Hız', '${widget.averageSpeed.toStringAsFixed(1)} km/h'),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(Icons.location_on, 'Nokta Sayısı', '${widget.pointsCount}'),
+                    if (widget.totalAscent > 0 || widget.totalDescent > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: _buildDetailRow(Icons.trending_up, 'Çıkış', '${widget.totalAscent.toStringAsFixed(0)}m')),
+                          Expanded(child: _buildDetailRow(Icons.trending_down, 'İniş', '${widget.totalDescent.toStringAsFixed(0)}m')),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  Navigator.pop(context);
-                  widget.onSave(value.trim());
-                }
-              },
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-            // Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text(AppStrings.cancel, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              // Name input
+              TextField(
+                controller: _nameController,
+                focusNode: _focusNode,
+                decoration: InputDecoration(
+                  labelText: AppStrings.routeName,
+                  hintText: 'Rotanız için bir isim girin',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.edit),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
                 ),
-                const SizedBox(width: 12),
-                FilledButton(
-                  onPressed: () {
-                    final name = _nameController.text.trim();
-                    if (name.isNotEmpty) {
-                      Navigator.pop(context);
-                      widget.onSave(name);
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text(AppStrings.save),
+              ),
+              const SizedBox(height: 20),
+
+              // Hava durumu seçimi
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.cloud, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Hava Durumu', style: Theme.of(context).textTheme.titleSmall),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: WeatherCondition.values.map((condition) {
+                        final isSelected = _selectedWeather == condition;
+                        return FilterChip(
+                          selected: isSelected,
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(_getWeatherIcon(condition), size: 16, color: isSelected ? Colors.white : _getWeatherColor(condition)),
+                              const SizedBox(width: 4),
+                              Text(
+                                condition == WeatherCondition.sunny
+                                    ? 'Güneşli'
+                                    : condition == WeatherCondition.cloudy
+                                    ? 'Bulutlu'
+                                    : condition == WeatherCondition.rainy
+                                    ? 'Yağmurlu'
+                                    : condition == WeatherCondition.snowy
+                                    ? 'Karlı'
+                                    : condition == WeatherCondition.windy
+                                    ? 'Rüzgarlı'
+                                    : 'Sisli',
+                                style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null),
+                              ),
+                            ],
+                          ),
+                          selectedColor: _getWeatherColor(condition),
+                          onSelected: (selected) {
+                            setState(() {
+                              _selectedWeather = selected ? condition : null;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    if (_selectedWeather != null) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 120,
+                        child: TextField(
+                          controller: _temperatureController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Sıcaklık',
+                            suffixText: '°C',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Puanlama
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 20, color: Colors.amber),
+                        const SizedBox(width: 8),
+                        Text('Rotayı Puanla', style: Theme.of(context).textTheme.titleSmall),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(index < _rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 32),
+                          onPressed: () {
+                            setState(() {
+                              _rating = index + 1;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text(AppStrings.cancel, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: () {
+                      final name = _nameController.text.trim();
+                      if (name.isNotEmpty) {
+                        WeatherInfo? weather;
+                        if (_selectedWeather != null) {
+                          double? temp;
+                          if (_temperatureController.text.isNotEmpty) {
+                            temp = double.tryParse(_temperatureController.text);
+                          }
+                          weather = WeatherInfo(condition: _selectedWeather!, temperature: temp);
+                        }
+                        Navigator.pop(context);
+                        widget.onSave(name, weather, _rating > 0 ? _rating : null);
+                      }
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text(AppStrings.save),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

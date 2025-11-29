@@ -83,7 +83,7 @@ class LocationService {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10)),
       );
 
-      final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, timestamp: DateTime.now());
+      final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
 
       return locationModel;
     } catch (e) {
@@ -115,7 +115,7 @@ class LocationService {
             ),
           ).listen(
             (Position position) {
-              final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, timestamp: DateTime.now());
+              final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
 
               _locationController.add(locationModel);
             },

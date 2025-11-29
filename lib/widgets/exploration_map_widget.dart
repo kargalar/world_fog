@@ -78,7 +78,7 @@ class _ExplorationMapWidgetState extends State<ExplorationMapWidget> {
     if (widget.showPastRoutes && widget.pastRoutes.isNotEmpty) {
       for (int i = 0; i < widget.pastRoutes.length; i++) {
         final route = widget.pastRoutes[i];
-        polylines.add(Polyline(polylineId: PolylineId('past_route_$i'), points: route.routePoints.map((point) => point.position).toList(), color: Colors.grey.withOpacity(0.6), width: 2));
+        polylines.add(Polyline(polylineId: PolylineId('past_route_$i'), points: route.routePoints.map((point) => point.position).toList(), color: Colors.grey.withValues(alpha: 0.6), width: 2));
       }
     }
 
@@ -96,13 +96,13 @@ class _ExplorationMapWidgetState extends State<ExplorationMapWidget> {
 
     // Keşfedilen alanlar - Sis efekti (geçmiş)
     for (final area in widget.exploredAreas) {
-      circles.add(Circle(circleId: CircleId('explored_$index'), center: area, radius: widget.explorationRadius, fillColor: Colors.blue.withOpacity(widget.areaOpacity * 0.6), strokeColor: Colors.blue.withOpacity(widget.areaOpacity * 0.3), strokeWidth: 1));
+      circles.add(Circle(circleId: CircleId('explored_$index'), center: area, radius: widget.explorationRadius, fillColor: Colors.blue.withValues(alpha: widget.areaOpacity * 0.6), strokeColor: Colors.blue.withValues(alpha: widget.areaOpacity * 0.3), strokeWidth: 1));
       index++;
     }
 
     // Aktif rota keşif alanları - Sis efekti
     for (final area in widget.currentRouteExploredAreas) {
-      circles.add(Circle(circleId: CircleId('route_explored_$index'), center: area, radius: widget.explorationRadius, fillColor: Colors.green.withOpacity(widget.areaOpacity * 0.8), strokeColor: Colors.green.withOpacity(widget.areaOpacity * 0.4), strokeWidth: 1));
+      circles.add(Circle(circleId: CircleId('route_explored_$index'), center: area, radius: widget.explorationRadius, fillColor: Colors.green.withValues(alpha: widget.areaOpacity * 0.8), strokeColor: Colors.green.withValues(alpha: widget.areaOpacity * 0.4), strokeWidth: 1));
       index++;
     }
 

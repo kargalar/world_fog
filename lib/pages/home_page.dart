@@ -1,5 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import '../models/route_model.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
@@ -8,6 +12,8 @@ import '../widgets/route_control_panel.dart';
 import '../widgets/route_stats_card.dart';
 import '../widgets/world_fog_app.dart';
 import '../widgets/route_name_dialog.dart';
+import '../widgets/waypoint_dialog.dart';
+import '../services/camera_service.dart';
 import '../utils/app_strings.dart';
 
 /// Main page widget
@@ -19,6 +25,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final ImagePicker _imagePicker = ImagePicker();
+  final CameraService _cameraService = CameraService();
+
   @override
   void initState() {
     super.initState();
@@ -100,13 +109,62 @@ class _HomePageState extends State<HomePage> {
               right: 16,
               child: Consumer<RouteViewModel>(
                 builder: (context, routeVM, child) {
-                  return RouteStatsCard(currentRouteDistance: routeVM.currentRouteDistance, currentRouteDuration: routeVM.currentRouteDuration, currentBreakDuration: routeVM.currentBreakDuration, isPaused: routeVM.isPaused);
+                  return RouteStatsCard(
+                    currentRouteDistance: routeVM.currentRouteDistance,
+                    currentRouteDuration: routeVM.currentRouteDuration,
+                    currentBreakDuration: routeVM.currentBreakDuration,
+                    isPaused: routeVM.isPaused,
+                    averageSpeed: routeVM.currentAverageSpeed,
+                    totalAscent: routeVM.totalAscent,
+                    totalDescent: routeVM.totalDescent,
+                  );
                 },
               ),
             ),
         ],
       ),
+      // Fotoğraf ekleme FAB (sadece rota aktifken)
+      floatingActionButton: context.watch<RouteViewModel>().isActive
+          ? FloatingActionButton(
+              onPressed: _addWaypoint,
+              backgroundColor: Colors.deepPurple,
+              child: const Icon(Icons.add_a_photo, color: Colors.white),
+            )
+          : null,
     );
+  }
+
+  /// Add a photo waypoint
+  Future<void> _addWaypoint() async {
+    final locationVM = context.read<LocationViewModel>();
+    final routeVM = context.read<RouteViewModel>();
+
+    if (!locationVM.hasLocation) {
+      SnackBarHelper.showError(context, 'Konum bilgisi alınamadı');
+      return;
+    }
+
+    // Fotoğraf çek
+    final XFile? photo = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 80);
+
+    if (photo == null) return;
+
+    // Waypoint tipini seç
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => WaypointTypeDialog(photoPath: photo.path),
+    );
+
+    if (result == null) return;
+
+    // Fotoğrafı kaydet
+    final savedPath = await _cameraService.savePhoto(photo.path);
+
+    // Waypoint oluştur ve ekle
+    final waypoint = RouteWaypoint(id: DateTime.now().millisecondsSinceEpoch.toString(), position: locationVM.currentPosition!, type: result['type'] as WaypointType, photoPath: savedPath, description: result['description'] as String?, timestamp: DateTime.now());
+
+    routeVM.addWaypoint(waypoint);
+    SnackBarHelper.showSuccess(context, 'İşaret eklendi: ${waypoint.typeLabel}');
   }
 
   /// Start route tracking
@@ -131,6 +189,9 @@ class _HomePageState extends State<HomePage> {
     final distance = routeVM.currentRouteDistance;
     final duration = routeVM.currentRouteDuration;
     final pointsCount = routeVM.currentRoutePointsCount;
+    final averageSpeed = routeVM.currentAverageSpeed;
+    final totalAscent = routeVM.totalAscent;
+    final totalDescent = routeVM.totalDescent;
 
     showDialog(
       context: context,
@@ -138,8 +199,11 @@ class _HomePageState extends State<HomePage> {
         distance: distance,
         duration: duration,
         pointsCount: pointsCount,
-        onSave: (name) async {
-          await routeVM.stopTrackingWithName(name);
+        averageSpeed: averageSpeed,
+        totalAscent: totalAscent,
+        totalDescent: totalDescent,
+        onSave: (name, weather, rating) async {
+          await routeVM.stopTrackingWithName(name, weather: weather, rating: rating);
           SnackBarHelper.showSuccess(context, '${AppStrings.routeSavedAs} "$name"');
         },
       ),

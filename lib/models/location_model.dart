@@ -5,28 +5,29 @@ class LocationModel {
   final LatLng position;
   final double? bearing;
   final double accuracy;
+  final double? altitude; // Yükseklik (metre)
   final DateTime timestamp;
 
-  const LocationModel({required this.position, this.bearing, required this.accuracy, required this.timestamp});
+  const LocationModel({required this.position, this.bearing, required this.accuracy, this.altitude, required this.timestamp});
 
-  LocationModel copyWith({LatLng? position, double? bearing, double? accuracy, DateTime? timestamp}) {
-    return LocationModel(position: position ?? this.position, bearing: bearing ?? this.bearing, accuracy: accuracy ?? this.accuracy, timestamp: timestamp ?? this.timestamp);
+  LocationModel copyWith({LatLng? position, double? bearing, double? accuracy, double? altitude, DateTime? timestamp}) {
+    return LocationModel(position: position ?? this.position, bearing: bearing ?? this.bearing, accuracy: accuracy ?? this.accuracy, altitude: altitude ?? this.altitude, timestamp: timestamp ?? this.timestamp);
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is LocationModel && other.position == position && other.bearing == bearing && other.accuracy == accuracy && other.timestamp == timestamp;
+    return other is LocationModel && other.position == position && other.bearing == bearing && other.accuracy == accuracy && other.altitude == altitude && other.timestamp == timestamp;
   }
 
   @override
   int get hashCode {
-    return position.hashCode ^ bearing.hashCode ^ accuracy.hashCode ^ timestamp.hashCode;
+    return position.hashCode ^ bearing.hashCode ^ accuracy.hashCode ^ altitude.hashCode ^ timestamp.hashCode;
   }
 
   @override
   String toString() {
-    return 'LocationModel(position: $position, bearing: $bearing, accuracy: $accuracy, timestamp: $timestamp)';
+    return 'LocationModel(position: $position, bearing: $bearing, accuracy: $accuracy, altitude: $altitude, timestamp: $timestamp)';
   }
 }
 
