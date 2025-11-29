@@ -22,6 +22,7 @@ enum WaypointType {
   fountain, // Çeşme
   junction, // Yol ayrımı
   waterfall, // Şelale
+  breakPoint, // Mola
   other, // Diğer
 }
 
@@ -53,6 +54,8 @@ class RouteWaypoint {
         return 'Yol Ayrımı';
       case WaypointType.waterfall:
         return 'Şelale';
+      case WaypointType.breakPoint:
+        return 'Mola';
       case WaypointType.other:
         return 'Diğer';
     }
@@ -71,20 +74,37 @@ enum WeatherCondition {
 
 class WeatherInfo {
   final WeatherCondition condition;
+  final List<WeatherCondition> conditions; // Multiple weather conditions support
   final double? temperature; // Celsius
   final String? notes;
 
-  WeatherInfo({required this.condition, this.temperature, this.notes});
+  WeatherInfo({required this.condition, List<WeatherCondition>? conditions, this.temperature, this.notes}) : conditions = conditions ?? [condition];
 
   Map<String, dynamic> toJson() {
-    return {'condition': condition.index, 'temperature': temperature, 'notes': notes};
+    return {'condition': condition.index, 'conditions': conditions.map((c) => c.index).toList(), 'temperature': temperature, 'notes': notes};
   }
 
   factory WeatherInfo.fromJson(Map<String, dynamic> json) {
-    return WeatherInfo(condition: WeatherCondition.values[json['condition'] ?? 0], temperature: json['temperature']?.toDouble(), notes: json['notes']);
+    final primaryCondition = WeatherCondition.values[json['condition'] ?? 0];
+    List<WeatherCondition> allConditions;
+
+    if (json['conditions'] != null) {
+      allConditions = (json['conditions'] as List).map((c) => WeatherCondition.values[c as int]).toList();
+    } else {
+      allConditions = [primaryCondition];
+    }
+
+    return WeatherInfo(condition: primaryCondition, conditions: allConditions, temperature: json['temperature']?.toDouble(), notes: json['notes']);
   }
 
   String get conditionLabel {
+    if (conditions.length == 1) {
+      return _getConditionLabel(conditions.first);
+    }
+    return conditions.map((c) => _getConditionLabel(c)).join(', ');
+  }
+
+  static String _getConditionLabel(WeatherCondition condition) {
     switch (condition) {
       case WeatherCondition.sunny:
         return 'Güneşli';

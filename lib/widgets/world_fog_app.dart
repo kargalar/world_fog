@@ -40,14 +40,38 @@ class AppInitializer extends StatefulWidget {
   State<AppInitializer> createState() => _AppInitializerState();
 }
 
-class _AppInitializerState extends State<AppInitializer> {
+class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObserver {
   bool _isInitialized = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeApp();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    final routeVM = context.read<RouteViewModel>();
+
+    if (state == AppLifecycleState.resumed) {
+      // App came to foreground - process any buffered location points
+      debugPrint('📱 App resumed - processing buffered locations');
+      routeVM.processBufferedLocations();
+    } else if (state == AppLifecycleState.paused) {
+      // App went to background - enable buffering
+      debugPrint('📱 App paused - enabling location buffering');
+      routeVM.enableLocationBuffering();
+    }
   }
 
   Future<void> _initializeApp() async {

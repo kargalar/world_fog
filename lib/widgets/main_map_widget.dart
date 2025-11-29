@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
@@ -10,9 +11,112 @@ import '../pages/settings_page.dart';
 import '../utils/app_strings.dart';
 import 'waypoint_dialog.dart';
 
+/// Custom marker icons cache
+class MarkerIcons {
+  static BitmapDescriptor? currentLocation;
+  static BitmapDescriptor? routeStart;
+  static BitmapDescriptor? routeEnd;
+  static BitmapDescriptor? breakPoint;
+  static BitmapDescriptor? scenery;
+  static BitmapDescriptor? fountain;
+  static BitmapDescriptor? junction;
+  static BitmapDescriptor? waterfall;
+  static BitmapDescriptor? other;
+  static bool _initialized = false;
+
+  static Future<void> initialize() async {
+    if (_initialized) return;
+
+    currentLocation = await _createCustomMarker(Icons.my_location, Colors.blue, 40);
+    routeStart = await _createCustomMarker(Icons.flag, Colors.green, 45);
+    routeEnd = await _createCustomMarker(Icons.flag_outlined, Colors.red, 45);
+    breakPoint = await _createCustomMarker(Icons.coffee, Colors.brown, 40);
+    scenery = await _createCustomMarker(Icons.landscape, Colors.green.shade700, 40);
+    fountain = await _createCustomMarker(Icons.water_drop, Colors.blue, 40);
+    junction = await _createCustomMarker(Icons.alt_route, Colors.orange, 40);
+    waterfall = await _createCustomMarker(Icons.water, Colors.cyan, 40);
+    other = await _createCustomMarker(Icons.location_on, Colors.purple, 40);
+
+    _initialized = true;
+  }
+
+  static Future<BitmapDescriptor> _createCustomMarker(IconData icon, Color color, double size) async {
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint()..color = color;
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    final double markerSize = size;
+    final double iconSize = size * 0.55;
+
+    // Draw shadow
+    canvas.drawCircle(Offset(markerSize / 2 + 1, markerSize / 2 + 2), markerSize / 2 - 2, shadowPaint);
+
+    // Draw circle background
+    canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, paint);
+
+    // Draw white border
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, borderPaint);
+
+    // Draw icon
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(icon.codePoint),
+      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: Colors.white),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset((markerSize - textPainter.width) / 2, (markerSize - textPainter.height) / 2));
+
+    final picture = pictureRecorder.endRecording();
+    final image = await picture.toImage(markerSize.toInt(), markerSize.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
+  }
+
+  static BitmapDescriptor getWaypointIcon(WaypointType type) {
+    switch (type) {
+      case WaypointType.scenery:
+        return scenery ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+      case WaypointType.fountain:
+        return fountain ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+      case WaypointType.junction:
+        return junction ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      case WaypointType.waterfall:
+        return waterfall ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
+      case WaypointType.breakPoint:
+        return breakPoint ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+      case WaypointType.other:
+        return other ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+    }
+  }
+}
+
 /// Ana harita widget'ı
-class MainMapWidget extends StatelessWidget {
+class MainMapWidget extends StatefulWidget {
   const MainMapWidget({super.key});
+
+  @override
+  State<MainMapWidget> createState() => _MainMapWidgetState();
+}
+
+class _MainMapWidgetState extends State<MainMapWidget> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeMarkers();
+  }
+
+  Future<void> _initializeMarkers() async {
+    await MarkerIcons.initialize();
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +165,9 @@ class MainMapWidget extends StatelessWidget {
       Marker(
         markerId: const MarkerId('current_location'),
         position: currentPosition,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        icon: MarkerIcons.currentLocation ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         infoWindow: const InfoWindow(title: 'Konumunuz'),
+        anchor: const Offset(0.5, 0.5),
       ),
     );
 
@@ -72,8 +177,9 @@ class MainMapWidget extends StatelessWidget {
         Marker(
           markerId: const MarkerId('route_start'),
           position: routeVM.currentRoutePoints.first.position,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: MarkerIcons.routeStart ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           infoWindow: const InfoWindow(title: 'Başlangıç'),
+          anchor: const Offset(0.5, 0.5),
         ),
       );
     }
@@ -85,8 +191,9 @@ class MainMapWidget extends StatelessWidget {
           Marker(
             markerId: MarkerId('waypoint_${waypoint.id}'),
             position: waypoint.position,
-            icon: BitmapDescriptor.defaultMarkerWithHue(_getWaypointHue(waypoint.type)),
+            icon: MarkerIcons.getWaypointIcon(waypoint.type),
             infoWindow: InfoWindow(title: waypoint.typeLabel),
+            anchor: const Offset(0.5, 0.5),
             onTap: () {
               _showWaypointDetail(context, waypoint, routeVM);
             },
@@ -96,21 +203,6 @@ class MainMapWidget extends StatelessWidget {
     }
 
     return markers;
-  }
-
-  double _getWaypointHue(WaypointType type) {
-    switch (type) {
-      case WaypointType.scenery:
-        return BitmapDescriptor.hueGreen;
-      case WaypointType.fountain:
-        return BitmapDescriptor.hueBlue;
-      case WaypointType.junction:
-        return BitmapDescriptor.hueOrange;
-      case WaypointType.waterfall:
-        return BitmapDescriptor.hueCyan;
-      case WaypointType.other:
-        return BitmapDescriptor.hueViolet;
-    }
   }
 
   void _showWaypointDetail(BuildContext context, RouteWaypoint waypoint, RouteViewModel routeVM) {

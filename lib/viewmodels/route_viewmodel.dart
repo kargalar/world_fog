@@ -34,6 +34,10 @@ class RouteViewModel extends ChangeNotifier {
   double _totalDescent = 0.0;
   double _lastAltitude = 0.0;
 
+  // Background location buffering
+  final List<LocationModel> _locationBuffer = [];
+  bool _isBufferingEnabled = false;
+
   // Timers
   Timer? _durationTimer;
   Timer? _breakTimer;
@@ -260,8 +264,47 @@ class RouteViewModel extends ChangeNotifier {
     return savedRoute;
   }
 
+  /// Arkaplan konum tamponlamasını etkinleştir
+  void enableLocationBuffering() {
+    _isBufferingEnabled = true;
+    debugPrint('📍 Location buffering enabled');
+  }
+
+  /// Tamponlanmış konumları işle (uygulama ön plana geldiğinde)
+  void processBufferedLocations() {
+    if (_locationBuffer.isEmpty) {
+      _isBufferingEnabled = false;
+      return;
+    }
+
+    debugPrint('📍 Processing ${_locationBuffer.length} buffered locations');
+
+    // Tamponlanmış tüm konumları sırayla işle
+    for (final location in _locationBuffer) {
+      _addLocationPointInternal(location);
+    }
+
+    _locationBuffer.clear();
+    _isBufferingEnabled = false;
+    notifyListeners();
+  }
+
   /// Yeni konum noktası ekle
   void addLocationPoint(LocationModel location) {
+    if (!_isTracking || _isPaused) return;
+
+    // Arkaplan modundayken tampona ekle
+    if (_isBufferingEnabled) {
+      _locationBuffer.add(location);
+      debugPrint('📍 Buffered location: ${location.position.latitude}, ${location.position.longitude}');
+      return;
+    }
+
+    _addLocationPointInternal(location);
+  }
+
+  /// İç konum noktası ekleme metodu
+  void _addLocationPointInternal(LocationModel location) {
     if (!_isTracking || _isPaused) return;
 
     LatLng? lastPointPosition;
@@ -288,7 +331,7 @@ class RouteViewModel extends ChangeNotifier {
     _lastAltitude = currentAltitude;
 
     // Yeni noktayı ekle
-    _currentRoutePoints.add(RoutePoint(position: location.position, altitude: currentAltitude, timestamp: DateTime.now()));
+    _currentRoutePoints.add(RoutePoint(position: location.position, altitude: currentAltitude, timestamp: location.timestamp));
 
     // Rotanın üzerindeki gridleri keşfet (bir önceki noktadan mevcut noktaya kadar)
     if (lastPointPosition != null && _onRoutePointsAdded != null) {
@@ -417,8 +460,26 @@ class RouteViewModel extends ChangeNotifier {
     _currentRoutePoints.clear();
     _currentRouteExploredAreas.clear();
     _currentWaypoints.clear();
+    _locationBuffer.clear();
+    _isBufferingEnabled = false;
     _durationTimer?.cancel();
     _breakTimer?.cancel();
+  }
+
+  /// Rota takibini kaydetmeden iptal et
+  void cancelTracking() {
+    if (!_isTracking) return;
+
+    // Timers'ı durdur
+    _durationTimer?.cancel();
+    _breakTimer?.cancel();
+
+    // Bildirim servisini durdur
+    _notificationService.stopRouteNotification();
+
+    // State'i sıfırla
+    _resetRouteState();
+    notifyListeners();
   }
 
   /// İki nokta arasındaki mesafeyi hesapla

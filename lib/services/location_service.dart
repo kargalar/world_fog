@@ -92,8 +92,8 @@ class LocationService {
     }
   }
 
-  /// Konum takibini başlat
-  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.high, int distanceFilter = 10}) async {
+  /// Konum takibini başlat - Canlı takip için optimize edildi
+  Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.high, int distanceFilter = 1}) async {
     try {
       final status = await checkLocationServiceStatus();
       if (!status.isAvailable) {
@@ -106,30 +106,47 @@ class LocationService {
       // Android için foreground notification ayarla (arkaplanda konum almak için)
       await Geolocator.requestPermission();
 
-      _positionStream =
-          Geolocator.getPositionStream(
-            locationSettings: LocationSettings(
-              accuracy: accuracy,
-              distanceFilter: distanceFilter,
-              timeLimit: const Duration(seconds: 60), // Timeout süresini 60 saniyeye artırdık
-            ),
-          ).listen(
-            (Position position) {
-              final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
+      // Platform-specific location settings for continuous tracking
+      late LocationSettings locationSettings;
 
-              _locationController.add(locationModel);
-            },
-            onError: (error) {
-              debugPrint('Konum stream hatası: $error');
-              _statusController.add(LocationServiceStatus(isEnabled: false, permissionStatus: LocationPermissionStatus.unknown, errorMessage: error.toString()));
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        locationSettings = AndroidSettings(
+          accuracy: accuracy,
+          distanceFilter: distanceFilter,
+          forceLocationManager: false,
+          intervalDuration: const Duration(milliseconds: 500), // Update every 500ms for smooth tracking
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationText: "Rota takibi devam ediyor",
+            notificationTitle: "World Fog",
+            enableWakeLock: true,
+            notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+          ),
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+        locationSettings = AppleSettings(accuracy: accuracy, activityType: ActivityType.fitness, distanceFilter: distanceFilter, pauseLocationUpdatesAutomatically: false, showBackgroundLocationIndicator: true);
+      } else {
+        locationSettings = LocationSettings(accuracy: accuracy, distanceFilter: distanceFilter);
+      }
 
-              // Hata durumunda yeniden başlatmayı dene
-              Future.delayed(const Duration(seconds: 5), () {
-                startLocationTracking(accuracy: accuracy, distanceFilter: distanceFilter);
-              });
-            },
-            cancelOnError: false,
-          );
+      _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+        (Position position) {
+          final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
+
+          _locationController.add(locationModel);
+        },
+        onError: (error) {
+          debugPrint('Konum stream hatası: $error');
+          _statusController.add(LocationServiceStatus(isEnabled: false, permissionStatus: LocationPermissionStatus.unknown, errorMessage: error.toString()));
+
+          // Hata durumunda yeniden başlatmayı dene
+          Future.delayed(const Duration(seconds: 3), () {
+            if (_positionStream == null) {
+              startLocationTracking(accuracy: accuracy, distanceFilter: distanceFilter);
+            }
+          });
+        },
+        cancelOnError: false,
+      );
 
       return true;
     } catch (e) {

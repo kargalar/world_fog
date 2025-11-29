@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,6 +8,93 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
 import '../widgets/waypoint_dialog.dart';
+
+/// Custom marker icons for route detail page
+class _RouteMarkerIcons {
+  static BitmapDescriptor? routeStart;
+  static BitmapDescriptor? routeEnd;
+  static BitmapDescriptor? currentPosition;
+  static BitmapDescriptor? scenery;
+  static BitmapDescriptor? fountain;
+  static BitmapDescriptor? junction;
+  static BitmapDescriptor? waterfall;
+  static BitmapDescriptor? breakPoint;
+  static BitmapDescriptor? other;
+  static bool _initialized = false;
+
+  static Future<void> initialize() async {
+    if (_initialized) return;
+
+    routeStart = await _createCustomMarker(Icons.flag, Colors.green, 45);
+    routeEnd = await _createCustomMarker(Icons.flag_outlined, Colors.red, 45);
+    currentPosition = await _createCustomMarker(Icons.navigation, Colors.orange, 40);
+    scenery = await _createCustomMarker(Icons.landscape, Colors.green.shade700, 40);
+    fountain = await _createCustomMarker(Icons.water_drop, Colors.blue, 40);
+    junction = await _createCustomMarker(Icons.alt_route, Colors.orange, 40);
+    waterfall = await _createCustomMarker(Icons.water, Colors.cyan, 40);
+    breakPoint = await _createCustomMarker(Icons.coffee, Colors.brown, 40);
+    other = await _createCustomMarker(Icons.location_on, Colors.purple, 40);
+
+    _initialized = true;
+  }
+
+  static Future<BitmapDescriptor> _createCustomMarker(IconData icon, Color color, double size) async {
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint()..color = color;
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    final double markerSize = size;
+    final double iconSize = size * 0.55;
+
+    // Draw shadow
+    canvas.drawCircle(Offset(markerSize / 2 + 1, markerSize / 2 + 2), markerSize / 2 - 2, shadowPaint);
+
+    // Draw circle background
+    canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, paint);
+
+    // Draw white border
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, borderPaint);
+
+    // Draw icon
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(icon.codePoint),
+      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: Colors.white),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset((markerSize - textPainter.width) / 2, (markerSize - textPainter.height) / 2));
+
+    final picture = pictureRecorder.endRecording();
+    final image = await picture.toImage(markerSize.toInt(), markerSize.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
+  }
+
+  static BitmapDescriptor getWaypointIcon(WaypointType type) {
+    switch (type) {
+      case WaypointType.scenery:
+        return scenery ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+      case WaypointType.fountain:
+        return fountain ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+      case WaypointType.junction:
+        return junction ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      case WaypointType.waterfall:
+        return waterfall ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
+      case WaypointType.breakPoint:
+        return breakPoint ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+      case WaypointType.other:
+        return other ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+    }
+  }
+}
 
 class RouteDetailPage extends StatefulWidget {
   final RouteModel route;
@@ -26,6 +114,17 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
   final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
   bool _isSliderControlling = false;
   double _sliderValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeMarkers();
+  }
+
+  Future<void> _initializeMarkers() async {
+    await _RouteMarkerIcons.initialize();
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
@@ -397,8 +496,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
       Marker(
         markerId: const MarkerId('start'),
         position: widget.route.routePoints.first.position,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        icon: _RouteMarkerIcons.routeStart ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
         infoWindow: const InfoWindow(title: 'Başlangıç'),
+        anchor: const Offset(0.5, 0.5),
       ),
     );
 
@@ -408,8 +508,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         Marker(
           markerId: const MarkerId('end'),
           position: widget.route.routePoints.last.position,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          icon: _RouteMarkerIcons.routeEnd ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: const InfoWindow(title: 'Bitiş'),
+          anchor: const Offset(0.5, 0.5),
         ),
       );
     }
@@ -420,8 +521,9 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         Marker(
           markerId: const MarkerId('current'),
           position: widget.route.routePoints[_currentPointIndex].position,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          icon: _RouteMarkerIcons.currentPosition ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
           infoWindow: const InfoWindow(title: 'Mevcut Konum'),
+          anchor: const Offset(0.5, 0.5),
         ),
       );
     }
@@ -432,29 +534,15 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         Marker(
           markerId: MarkerId('waypoint_${waypoint.id}'),
           position: waypoint.position,
-          icon: BitmapDescriptor.defaultMarkerWithHue(_getWaypointHue(waypoint.type)),
+          icon: _RouteMarkerIcons.getWaypointIcon(waypoint.type),
           infoWindow: InfoWindow(title: waypoint.typeLabel),
+          anchor: const Offset(0.5, 0.5),
           onTap: () => _showWaypointDetail(waypoint),
         ),
       );
     }
 
     return markers;
-  }
-
-  double _getWaypointHue(WaypointType type) {
-    switch (type) {
-      case WaypointType.scenery:
-        return BitmapDescriptor.hueGreen;
-      case WaypointType.fountain:
-        return BitmapDescriptor.hueBlue;
-      case WaypointType.junction:
-        return BitmapDescriptor.hueOrange;
-      case WaypointType.waterfall:
-        return BitmapDescriptor.hueCyan;
-      case WaypointType.other:
-        return BitmapDescriptor.hueViolet;
-    }
   }
 
   void _showWaypointDetail(RouteWaypoint waypoint) {

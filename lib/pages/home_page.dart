@@ -11,7 +11,7 @@ import '../widgets/main_map_widget.dart';
 import '../widgets/route_control_panel.dart';
 import '../widgets/route_stats_card.dart';
 import '../widgets/world_fog_app.dart';
-import '../widgets/route_name_dialog.dart';
+import '../widgets/route_save_bottomsheet.dart';
 import '../widgets/waypoint_dialog.dart';
 import '../services/camera_service.dart';
 import '../utils/app_strings.dart';
@@ -192,21 +192,34 @@ class _HomePageState extends State<HomePage> {
     final averageSpeed = routeVM.currentAverageSpeed;
     final totalAscent = routeVM.totalAscent;
     final totalDescent = routeVM.totalDescent;
+    final totalBreakTime = routeVM.totalPausedTime;
+    final waypointsCount = routeVM.currentWaypoints.length;
 
-    showDialog(
+    showRouteSaveBottomSheet(
       context: context,
-      builder: (context) => RouteNameDialog(
-        distance: distance,
-        duration: duration,
-        pointsCount: pointsCount,
-        averageSpeed: averageSpeed,
-        totalAscent: totalAscent,
-        totalDescent: totalDescent,
-        onSave: (name, weather, rating) async {
-          await routeVM.stopTrackingWithName(name, weather: weather, rating: rating);
-          SnackBarHelper.showSuccess(context, '${AppStrings.routeSavedAs} "$name"');
-        },
-      ),
+      distance: distance,
+      duration: duration,
+      pointsCount: pointsCount,
+      averageSpeed: averageSpeed,
+      totalAscent: totalAscent,
+      totalDescent: totalDescent,
+      totalBreakTime: totalBreakTime,
+      waypointsCount: waypointsCount,
+      onSave: (name, weatherConditions, temperature, rating) async {
+        WeatherInfo? weather;
+        if (weatherConditions != null && weatherConditions.isNotEmpty) {
+          weather = WeatherInfo(condition: weatherConditions.first, conditions: weatherConditions, temperature: temperature);
+        }
+        await routeVM.stopTrackingWithName(name, weather: weather, rating: rating);
+        SnackBarHelper.showSuccess(context, '${AppStrings.routeSavedAs} "$name"');
+      },
+      onDelete: () {
+        routeVM.cancelTracking();
+        SnackBarHelper.showSuccess(context, 'Rota silindi');
+      },
+      onCancel: () {
+        // Do nothing, just close the bottom sheet
+      },
     );
   }
 }

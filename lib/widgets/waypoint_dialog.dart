@@ -32,6 +32,8 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
         return Icons.fork_right;
       case WaypointType.waterfall:
         return Icons.waterfall_chart;
+      case WaypointType.breakPoint:
+        return Icons.coffee;
       case WaypointType.other:
         return Icons.place;
     }
@@ -47,6 +49,8 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
         return Colors.orange;
       case WaypointType.waterfall:
         return Colors.cyan;
+      case WaypointType.breakPoint:
+        return Colors.brown;
       case WaypointType.other:
         return Colors.purple;
     }
@@ -62,6 +66,8 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
         return 'Yol Ayrımı';
       case WaypointType.waterfall:
         return 'Şelale';
+      case WaypointType.breakPoint:
+        return 'Mola';
       case WaypointType.other:
         return 'Diğer';
     }
@@ -181,6 +187,8 @@ class WaypointDetailSheet extends StatelessWidget {
         return Icons.fork_right;
       case WaypointType.waterfall:
         return Icons.waterfall_chart;
+      case WaypointType.breakPoint:
+        return Icons.coffee;
       case WaypointType.other:
         return Icons.place;
     }
@@ -196,6 +204,8 @@ class WaypointDetailSheet extends StatelessWidget {
         return Colors.orange;
       case WaypointType.waterfall:
         return Colors.cyan;
+      case WaypointType.breakPoint:
+        return Colors.brown;
       case WaypointType.other:
         return Colors.purple;
     }
