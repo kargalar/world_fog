@@ -395,32 +395,38 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     _buildCompactInfo(widget.route.formattedDuration, Icons.timer, AppColors.green),
                     _buildCompactInfo(widget.route.formattedAverageSpeed, Icons.speed, AppColors.purple),
                     if (widget.route.totalBreakTime.inSeconds > 0) _buildCompactInfo(widget.route.formattedBreakTime, Icons.coffee, AppColors.brown),
+                    _buildCompactInfo('${widget.route.routePoints.length}', Icons.location_on, AppColors.orange),
                   ],
                 ),
                 // Hava durumu ve puan bilgisi
-                if (widget.route.weather != null || widget.route.rating != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.route.weather != null) ...[
-                        Icon(_getWeatherIcon(widget.route.weather!.condition), size: 16, color: AppColors.grey),
-                        const SizedBox(width: 4),
-                        Text(widget.route.weather!.conditionLabel + (widget.route.weather!.temperature != null ? ' ${widget.route.weather!.temperature!.toStringAsFixed(0)}°C' : ''), style: const TextStyle(fontSize: 11, color: AppColors.grey)),
-                        const SizedBox(width: 12),
-                      ],
-                      if (widget.route.rating != null) ...[...List.generate(widget.route.rating!, (index) => const Icon(Icons.star, size: 14, color: AppColors.amber)), ...List.generate(5 - widget.route.rating!, (index) => const Icon(Icons.star_border, size: 14, color: AppColors.grey))],
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.route.weather != null) ...[
+                      Icon(_getWeatherIcon(widget.route.weather!.condition), size: 16, color: AppColors.grey),
+                      const SizedBox(width: 4),
+                      Text(widget.route.weather!.conditionLabel + (widget.route.weather!.temperature != null ? ' ${widget.route.weather!.temperature!.toStringAsFixed(0)}°C' : ''), style: const TextStyle(fontSize: 11, color: AppColors.grey)),
+                    ] else ...[
+                      const Icon(Icons.cloud_off, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 4),
+                      const Text('No weather data', style: TextStyle(fontSize: 11, color: AppColors.grey)),
                     ],
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    if (widget.route.rating != null) ...[
+                      ...List.generate(widget.route.rating!, (index) => const Icon(Icons.star, size: 14, color: AppColors.amber)),
+                      ...List.generate(5 - widget.route.rating!, (index) => const Icon(Icons.star_border, size: 14, color: AppColors.grey)),
+                    ] else ...[
+                      const Text('Not rated', style: TextStyle(fontSize: 11, color: AppColors.grey)),
+                    ],
+                  ],
+                ),
                 // İniş/Çıkış bilgileri (sadece yükseklik verisi varsa)
-                if (_hasElevationData || widget.route.totalAscent > 0 || widget.route.totalDescent > 0) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [_buildCompactInfo(widget.route.formattedAscent, Icons.trending_up, AppColors.green), _buildCompactInfo(widget.route.formattedDescent, Icons.trending_down, AppColors.red), _buildCompactInfo('${widget.route.waypoints.length}', Icons.photo_camera, AppColors.deepPurple)],
-                  ),
-                ],
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [_buildCompactInfo(widget.route.formattedAscent, Icons.trending_up, AppColors.green), _buildCompactInfo(widget.route.formattedDescent, Icons.trending_down, AppColors.red), _buildCompactInfo('${widget.route.waypoints.length}', Icons.photo_camera, AppColors.deepPurple)],
+                ),
                 // Simülasyon kontrolü
                 if (widget.route.routePoints.isNotEmpty) ...[
                   const SizedBox(height: 8),

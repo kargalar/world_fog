@@ -318,13 +318,11 @@ class RouteViewModel extends ChangeNotifier {
       _currentRouteDistance += distance;
 
       // Yükseklik değişimini hesapla
-      if (_lastAltitude > 0 && currentAltitude > 0) {
-        final altitudeDiff = currentAltitude - _lastAltitude;
-        if (altitudeDiff > 0) {
-          _totalAscent += altitudeDiff;
-        } else {
-          _totalDescent += altitudeDiff.abs();
-        }
+      final altitudeDiff = currentAltitude - _lastAltitude;
+      if (altitudeDiff > 0) {
+        _totalAscent += altitudeDiff;
+      } else {
+        _totalDescent += altitudeDiff.abs();
       }
     }
 

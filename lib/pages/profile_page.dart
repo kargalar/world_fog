@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/route_model.dart';
 import '../services/route_service.dart';
-import 'route_detail_page.dart';
 import '../utils/app_strings.dart';
 import '../utils/app_colors.dart';
+import '../widgets/route_list_item.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -95,7 +96,16 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.routeHistory), backgroundColor: Theme.of(context).colorScheme.inversePrimary),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage())),
+            tooltip: AppStrings.settings,
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _routes.isEmpty
@@ -137,57 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     itemCount: _routes.length,
                     itemBuilder: (context, index) {
                       final route = _routes[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(route.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_formatDate(route.startTime)),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(Icons.straighten, size: 16, color: AppColors.greyShade700),
-                                  const SizedBox(width: 4),
-                                  Text(route.formattedDistance),
-                                  const SizedBox(width: 16),
-                                  Icon(Icons.timer, size: 16, color: AppColors.greyShade700),
-                                  const SizedBox(width: 4),
-                                  Text(route.formattedDuration),
-                                ],
-                              ),
-                              if (route.totalBreakTime.inSeconds > 0) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.coffee, size: 16, color: AppColors.orangeShade600),
-                                    const SizedBox(width: 4),
-                                    Text('${AppStrings.breakLabel} ${route.formattedBreakTime}'),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(icon: const Icon(Icons.edit), onPressed: () => _editRouteName(route), padding: const EdgeInsets.all(0)),
-                              IconButton(
-                                icon: const Icon(Icons.visibility),
-                                onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => RouteDetailPage(route: route)));
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: AppColors.red),
-                                onPressed: () => _showDeleteConfirmation(route),
-                              ),
-                            ],
-                          ),
-                          isThreeLine: true,
-                        ),
-                      );
+                      return RouteListItem(route: route, onEdit: () => _editRouteName(route), onDelete: () => _showDeleteConfirmation(route));
                     },
                   ),
                 ),
@@ -230,9 +190,5 @@ class _ProfilePageState extends State<ProfilePage> {
     } else {
       return '${minutes}d';
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

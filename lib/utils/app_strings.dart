@@ -17,7 +17,7 @@ class AppStrings {
   static const String pause = 'Pause';
   static const String resume = 'Resume';
   static const String play = 'Play';
-  static const String add = 'Ekle';
+  static const String add = 'Add';
 
   // App initialization
   static const String startingApp = 'Starting World Fog...';
@@ -28,52 +28,52 @@ class AppStrings {
   static const String locationServiceUnavailable = 'Location service not available';
 
   // Routes
-  static const String activeRoute = 'Aktif Rota';
+  static const String activeRoute = 'Active Route';
   static const String routeHistory = 'Route History';
   static const String noSavedRoutes = 'No saved routes yet';
   static const String startTrackingToSave = 'Start tracking on the map to save your routes';
-  static const String routeName = 'Rota Adı';
+  static const String routeName = 'Route Name';
   static const String editRouteName = 'Edit Route Name';
   static const String deleteRoute = 'Delete Route';
   static const String confirmDeleteRoute = 'Are you sure you want to delete the';
-  static const String routeSavedAs = 'Rota kaydedildi:';
-  static const String routeTrackingStarted = 'Rota kaydı başladı';
+  static const String routeSavedAs = 'Route saved as:';
+  static const String routeTrackingStarted = 'Route tracking started';
   static const String totalRoutes = 'Total Routes';
   static const String totalDistance = 'Total Distance';
   static const String totalTime = 'Total Time';
-  static const String breakLabel = 'Mola:';
-  static const String averageSpeed = 'Ort. Hız';
+  static const String breakLabel = 'Break:';
+  static const String averageSpeed = 'Avg Speed';
 
   // Weather
-  static const String weather = 'Hava Durumu';
-  static const String sunny = 'Güneşli';
-  static const String cloudy = 'Bulutlu';
-  static const String rainy = 'Yağmurlu';
-  static const String snowy = 'Karlı';
-  static const String windy = 'Rüzgarlı';
-  static const String foggy = 'Sisli';
-  static const String temperature = 'Sıcaklık';
+  static const String weather = 'Weather';
+  static const String sunny = 'Sunny';
+  static const String cloudy = 'Cloudy';
+  static const String rainy = 'Rainy';
+  static const String snowy = 'Snowy';
+  static const String windy = 'Windy';
+  static const String foggy = 'Foggy';
+  static const String temperature = 'Temperature';
 
   // Waypoints
-  static const String addWaypoint = 'İşaret Ekle';
-  static const String waypointType = 'İşaret Tipi';
-  static const String scenery = 'Manzara';
-  static const String fountain = 'Çeşme';
-  static const String junction = 'Yol Ayrımı';
-  static const String waterfall = 'Şelale';
-  static const String other = 'Diğer';
-  static const String waypointDescription = 'Açıklama';
+  static const String addWaypoint = 'Add Waypoint';
+  static const String waypointType = 'Waypoint Type';
+  static const String scenery = 'Scenery';
+  static const String fountain = 'Fountain';
+  static const String junction = 'Junction';
+  static const String waterfall = 'Waterfall';
+  static const String other = 'Other';
+  static const String waypointDescription = 'Description';
 
   // Map
-  static const String mapView = 'Harita Görünümü';
+  static const String mapView = 'Map View';
   static const String normalMap = 'Normal';
-  static const String satelliteMap = 'Uydu';
-  static const String terrainMap = 'Arazi';
-  static const String hybridMap = 'Hibrit';
+  static const String satelliteMap = 'Satellite';
+  static const String terrainMap = 'Terrain';
+  static const String hybridMap = 'Hybrid';
 
   // Elevation
-  static const String ascent = 'Çıkış';
-  static const String descent = 'İniş';
+  static const String ascent = 'Ascent';
+  static const String descent = 'Descent';
 
   // Settings
   static const String settings = 'Settings';
@@ -103,7 +103,7 @@ class AppStrings {
   static const String colorMapDescription = 'Explored areas are colored from blue (few) to red (many) according to frequency.';
 
   // Route controls
-  static const String startTracking = 'Başlat';
+  static const String startTracking = 'Start';
   static const String progress = 'Progress:';
 
   // Elevation
@@ -117,5 +117,29 @@ class AppStrings {
   static const String profile = 'Profile';
 
   // Rating
-  static const String rateRoute = 'Rotayı Puanla';
+  static const String rateRoute = 'Rate Route';
+
+  // Route Stats Card
+  static const String distance = 'Distance';
+  static const String duration = 'Duration';
+  static const String breakTime = 'Break Time';
+  static const String paused = 'Paused';
+  static const String km = 'km';
+  static const String kmPerHour = 'km/h';
+  static const String metersUnit = 'm';
+  static const String hourUnit = 'h';
+  static const String minuteUnit = 'm';
+  static const String secondUnit = 's';
+
+  // Route Save Bottom Sheet
+  static const String saveRoute = 'Save Route';
+  static const String routeDetails = 'Route Details';
+  static const String points = 'Points';
+  static const String waypointsLabel = 'Waypoints';
+  static const String enterRouteNameHint = 'Enter a name for your route';
+  static const String rating = 'Rating';
+  static const String deleteRouteTurkish = 'Delete Route';
+  static const String confirmDeleteRouteMessage = 'Are you sure you want to delete this route? This action cannot be undone.';
+  static const String deleteTurkish = 'Delete';
+  static const String untitled = 'Untitled';
 }

@@ -2,7 +2,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class RoutePoint {
   final LatLng position;
-  final double altitude; // metre cinsinden yükseklik
+  final double altitude; // altitude in meters
   final DateTime timestamp;
 
   RoutePoint({required this.position, required this.altitude, required this.timestamp});
@@ -18,12 +18,12 @@ class RoutePoint {
 
 /// Rota üzerindeki fotoğraf işaretleri için model
 enum WaypointType {
-  scenery, // Manzara
-  fountain, // Çeşme
-  junction, // Yol ayrımı
-  waterfall, // Şelale
-  breakPoint, // Mola
-  other, // Diğer
+  scenery, // Scenery
+  fountain, // Fountain
+  junction, // Junction
+  waterfall, // Waterfall
+  breakPoint, // Break
+  other, // Other
 }
 
 class RouteWaypoint {
@@ -47,29 +47,29 @@ class RouteWaypoint {
   String get typeLabel {
     switch (type) {
       case WaypointType.scenery:
-        return 'Manzara';
+        return 'Scenery';
       case WaypointType.fountain:
-        return 'Çeşme';
+        return 'Fountain';
       case WaypointType.junction:
-        return 'Yol Ayrımı';
+        return 'Junction';
       case WaypointType.waterfall:
-        return 'Şelale';
+        return 'Waterfall';
       case WaypointType.breakPoint:
-        return 'Mola';
+        return 'Break';
       case WaypointType.other:
-        return 'Diğer';
+        return 'Other';
     }
   }
 }
 
 /// Hava durumu bilgisi için model
 enum WeatherCondition {
-  sunny, // Güneşli
-  cloudy, // Bulutlu
-  rainy, // Yağmurlu
-  snowy, // Karlı
-  windy, // Rüzgarlı
-  foggy, // Sisli
+  sunny, // Sunny
+  cloudy, // Cloudy
+  rainy, // Rainy
+  snowy, // Snowy
+  windy, // Windy
+  foggy, // Foggy
 }
 
 class WeatherInfo {
@@ -107,17 +107,17 @@ class WeatherInfo {
   static String _getConditionLabel(WeatherCondition condition) {
     switch (condition) {
       case WeatherCondition.sunny:
-        return 'Güneşli';
+        return 'Sunny';
       case WeatherCondition.cloudy:
-        return 'Bulutlu';
+        return 'Cloudy';
       case WeatherCondition.rainy:
-        return 'Yağmurlu';
+        return 'Rainy';
       case WeatherCondition.snowy:
-        return 'Karlı';
+        return 'Snowy';
       case WeatherCondition.windy:
-        return 'Rüzgarlı';
+        return 'Windy';
       case WeatherCondition.foggy:
-        return 'Sisli';
+        return 'Foggy';
     }
   }
 }
@@ -127,16 +127,16 @@ class RouteModel {
   final String name;
   final DateTime startTime;
   final DateTime? endTime;
-  final List<RoutePoint> routePoints; // RoutePoint kullanıyoruz
-  final double totalDistance; // metre cinsinden
+  final List<RoutePoint> routePoints; // Using RoutePoint
+  final double totalDistance; // in meters
   final Duration totalDuration;
-  final Duration totalBreakTime; // toplam mola süresi
+  final Duration totalBreakTime; // total break time
   final List<LatLng> exploredAreas;
-  final List<RouteWaypoint> waypoints; // Fotoğraf işaretleri
-  final WeatherInfo? weather; // Hava durumu bilgisi
-  final int? rating; // 1-5 arası puan
-  final double totalAscent; // Toplam çıkış (metre)
-  final double totalDescent; // Toplam iniş (metre)
+  final List<RouteWaypoint> waypoints; // Photo waypoints
+  final WeatherInfo? weather; // Weather information
+  final int? rating; // rating from 1-5
+  final double totalAscent; // Total ascent (meters)
+  final double totalDescent; // Total descent (meters)
 
   RouteModel({
     required this.id,
@@ -155,10 +155,10 @@ class RouteModel {
     this.totalDescent = 0.0,
   });
 
-  /// Ortalama hız (km/h)
+  /// Average speed (km/h)
   double get averageSpeed {
     if (totalDuration.inSeconds == 0) return 0.0;
-    // Mola süresini çıkararak hareket süresini hesapla
+    // Calculate moving duration by subtracting break time
     final movingDuration = totalDuration - totalBreakTime;
     if (movingDuration.inSeconds == 0) return 0.0;
     return (totalDistance / 1000) / (movingDuration.inSeconds / 3600);
@@ -180,9 +180,9 @@ class RouteModel {
     int hours = totalDuration.inHours;
     int minutes = totalDuration.inMinutes % 60;
     if (hours > 0) {
-      return '${hours}s ${minutes}dk';
+      return '${hours}h ${minutes}m';
     } else {
-      return '${minutes}dk';
+      return '${minutes}m';
     }
   }
 
@@ -190,9 +190,9 @@ class RouteModel {
     int hours = totalBreakTime.inHours;
     int minutes = totalBreakTime.inMinutes % 60;
     if (hours > 0) {
-      return '${hours}s ${minutes}dk';
+      return '${hours}h ${minutes}m';
     } else {
-      return '${minutes}dk';
+      return '${minutes}m';
     }
   }
 

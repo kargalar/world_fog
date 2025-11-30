@@ -6,34 +6,27 @@ class MapControlButtons extends StatelessWidget {
   final VoidCallback? onLocationPressed;
   final VoidCallback? onTogglePastRoutes;
   final VoidCallback? onProfilePressed;
-  final VoidCallback? onSettingsPressed;
   final bool isFollowingLocation;
   final bool showPastRoutes;
 
-  const MapControlButtons({super.key, this.onLocationPressed, this.onTogglePastRoutes, this.onProfilePressed, this.onSettingsPressed, required this.isFollowingLocation, required this.showPastRoutes});
+  const MapControlButtons({super.key, this.onLocationPressed, this.onTogglePastRoutes, this.onProfilePressed, required this.isFollowingLocation, required this.showPastRoutes});
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      right: 16,
-      bottom: 100,
-      child: Column(
-        children: [
-          _buildControlButton(
-            icon: isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed,
-            onPressed: onLocationPressed,
-            backgroundColor: isFollowingLocation ? AppColors.blue : AppColors.white,
-            iconColor: isFollowingLocation ? AppColors.white : AppColors.grey,
-            tooltip: AppStrings.followMyLocation,
-          ),
-          const SizedBox(height: 8),
-          _buildControlButton(icon: showPastRoutes ? Icons.visibility_off : Icons.visibility, onPressed: onTogglePastRoutes, backgroundColor: showPastRoutes ? AppColors.orange : AppColors.white, iconColor: showPastRoutes ? AppColors.white : AppColors.grey, tooltip: AppStrings.pastRoutes),
-          const SizedBox(height: 8),
-          _buildControlButton(icon: Icons.person, onPressed: onProfilePressed, backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: AppStrings.profile),
-          const SizedBox(height: 8),
-          _buildControlButton(icon: Icons.settings, onPressed: onSettingsPressed, backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: AppStrings.settings),
-        ],
-      ),
+    return Column(
+      children: [
+        _buildControlButton(
+          icon: isFollowingLocation ? Icons.gps_fixed : Icons.gps_not_fixed,
+          onPressed: onLocationPressed,
+          backgroundColor: isFollowingLocation ? AppColors.blue : AppColors.white,
+          iconColor: isFollowingLocation ? AppColors.white : AppColors.grey,
+          tooltip: AppStrings.followMyLocation,
+        ),
+        const SizedBox(height: 8),
+        _buildControlButton(icon: showPastRoutes ? Icons.visibility_off : Icons.visibility, onPressed: onTogglePastRoutes, backgroundColor: showPastRoutes ? AppColors.orange : AppColors.white, iconColor: showPastRoutes ? AppColors.white : AppColors.grey, tooltip: AppStrings.pastRoutes),
+        const SizedBox(height: 8),
+        _buildControlButton(icon: Icons.person, onPressed: onProfilePressed, backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: AppStrings.profile),
+      ],
     );
   }
 

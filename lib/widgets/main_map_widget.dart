@@ -280,8 +280,8 @@ class MapControlButtons extends StatelessWidget {
     return Consumer2<LocationViewModel, MapViewModel>(
       builder: (context, locationVM, mapVM, child) {
         return Positioned(
-          right: 16,
-          bottom: 90,
+          left: 16,
+          bottom: 16,
           child: Column(
             children: [
               // Map type button
@@ -325,22 +325,6 @@ class MapControlButtons extends StatelessWidget {
                 backgroundColor: AppColors.white,
                 iconColor: AppColors.grey,
                 tooltip: AppStrings.profileAndRouteHistory,
-              ),
-
-              const SizedBox(height: 8),
-
-              // Settings button
-              _buildControlButton(
-                icon: Icons.settings,
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SettingsPage(onRadiusChanged: (newRadius) => mapVM.updateExplorationRadius(newRadius), onOpacityChanged: (newOpacity) => mapVM.updateAreaOpacity(newOpacity)),
-                  ),
-                ),
-                backgroundColor: AppColors.white,
-                iconColor: AppColors.grey,
-                tooltip: AppStrings.settings,
               ),
             ],
           ),

@@ -47,7 +47,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _nameController.text = 'Rota ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}';
+    _nameController.text = '';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -74,11 +74,11 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
     int minutes = duration.inMinutes % 60;
     int seconds = duration.inSeconds % 60;
     if (hours > 0) {
-      return '${hours}s ${minutes}dk';
+      return '$hours${AppStrings.hourUnit} $minutes${AppStrings.minuteUnit}';
     } else if (minutes > 0) {
-      return '${minutes}dk ${seconds}sn';
+      return '$minutes${AppStrings.minuteUnit} $seconds${AppStrings.secondUnit}';
     } else {
-      return '${seconds}sn';
+      return '$seconds${AppStrings.secondUnit}';
     }
   }
 
@@ -119,17 +119,17 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
   String _getWeatherLabel(WeatherCondition condition) {
     switch (condition) {
       case WeatherCondition.sunny:
-        return 'Güneşli';
+        return AppStrings.sunny;
       case WeatherCondition.cloudy:
-        return 'Bulutlu';
+        return AppStrings.cloudy;
       case WeatherCondition.rainy:
-        return 'Yağmurlu';
+        return AppStrings.rainy;
       case WeatherCondition.snowy:
-        return 'Karlı';
+        return AppStrings.snowy;
       case WeatherCondition.windy:
-        return 'Rüzgarlı';
+        return AppStrings.windy;
       case WeatherCondition.foggy:
-        return 'Sisli';
+        return AppStrings.foggy;
     }
   }
 
@@ -137,10 +137,10 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rotayı Sil'),
-        content: const Text('Bu rotayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
+        title: Text(AppStrings.deleteRouteTurkish),
+        content: Text(AppStrings.confirmDeleteRouteMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppStrings.cancel)),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppStrings.cancel)),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -148,7 +148,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               widget.onDelete();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
-            child: const Text('Sil'),
+            child: Text(AppStrings.deleteTurkish),
           ),
         ],
       ),
@@ -183,7 +183,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               children: [
                 Icon(Icons.route, color: Theme.of(context).colorScheme.primary, size: 24),
                 const SizedBox(width: 8),
-                Text('Rotayı Kaydet', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text(AppStrings.saveRoute, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -196,33 +196,33 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Rota Detayları',
+                    AppStrings.routeDetails,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(height: 8),
                   // First row: Distance, Duration, Avg Speed
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.straighten, 'Mesafe', _formatDistance(widget.distance), AppColors.blue)),
-                      Expanded(child: _buildCompactDetail(Icons.timer, 'Süre', _formatDuration(widget.duration), AppColors.green)),
-                      Expanded(child: _buildCompactDetail(Icons.speed, 'Ort. Hız', '${widget.averageSpeed.toStringAsFixed(1)} km/h', AppColors.purple)),
+                      Expanded(child: _buildCompactDetail(Icons.straighten, AppStrings.distance, _formatDistance(widget.distance), AppColors.blue)),
+                      Expanded(child: _buildCompactDetail(Icons.timer, AppStrings.duration, _formatDuration(widget.duration), AppColors.green)),
+                      Expanded(child: _buildCompactDetail(Icons.speed, AppStrings.averageSpeed, '${widget.averageSpeed.toStringAsFixed(1)} km/h', AppColors.purple)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Second row: Ascent, Descent, Break time
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.trending_up, 'Çıkış', '${widget.totalAscent.toStringAsFixed(0)}m', AppColors.green)),
-                      Expanded(child: _buildCompactDetail(Icons.trending_down, 'İniş', '${widget.totalDescent.toStringAsFixed(0)}m', AppColors.red)),
-                      Expanded(child: _buildCompactDetail(Icons.coffee, 'Mola', _formatDuration(widget.totalBreakTime), AppColors.brown)),
+                      Expanded(child: _buildCompactDetail(Icons.trending_up, AppStrings.ascent, '${widget.totalAscent.toStringAsFixed(0)}m', AppColors.green)),
+                      Expanded(child: _buildCompactDetail(Icons.trending_down, AppStrings.descent, '${widget.totalDescent.toStringAsFixed(0)}m', AppColors.red)),
+                      Expanded(child: _buildCompactDetail(Icons.coffee, AppStrings.breakTime, _formatDuration(widget.totalBreakTime), AppColors.brown)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Third row: Points count, Waypoints count
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.location_on, 'Nokta', '${widget.pointsCount}', AppColors.orange)),
-                      Expanded(child: _buildCompactDetail(Icons.photo_camera, 'İşaret', '${widget.waypointsCount}', AppColors.deepPurple)),
+                      Expanded(child: _buildCompactDetail(Icons.location_on, AppStrings.points, '${widget.pointsCount}', AppColors.orange)),
+                      Expanded(child: _buildCompactDetail(Icons.photo_camera, AppStrings.waypointsLabel, '${widget.waypointsCount}', AppColors.deepPurple)),
                       const Expanded(child: SizedBox()),
                     ],
                   ),
@@ -237,7 +237,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               focusNode: _focusNode,
               decoration: InputDecoration(
                 labelText: AppStrings.routeName,
-                hintText: 'Rotanız için bir isim girin',
+                hintText: AppStrings.enterRouteNameHint,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 prefixIcon: const Icon(Icons.edit),
                 isDense: true,
@@ -259,7 +259,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                     children: [
                       const Icon(Icons.cloud, size: 16),
                       const SizedBox(width: 6),
-                      Text('Hava Durumu', style: Theme.of(context).textTheme.labelLarge),
+                      Text(AppStrings.weather, style: Theme.of(context).textTheme.labelLarge),
                       const Spacer(),
                       if (_selectedWeatherConditions.isNotEmpty)
                         SizedBox(
@@ -326,7 +326,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                 children: [
                   const Icon(Icons.star, size: 16, color: AppColors.amber),
                   const SizedBox(width: 6),
-                  Text('Puan', style: Theme.of(context).textTheme.labelLarge),
+                  Text(AppStrings.rating, style: Theme.of(context).textTheme.labelLarge),
                   const Spacer(),
                   ...List.generate(5, (index) {
                     return GestureDetector(
@@ -364,17 +364,18 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                 // Save button
                 FilledButton(
                   onPressed: () {
-                    final name = _nameController.text.trim();
-                    if (name.isNotEmpty) {
-                      double? temp;
-                      if (_temperatureController.text.isNotEmpty) {
-                        temp = double.tryParse(_temperatureController.text);
-                      }
-                      Navigator.pop(context);
-                      widget.onSave(name, _selectedWeatherConditions.isNotEmpty ? _selectedWeatherConditions.toList() : null, temp, _rating > 0 ? _rating : null);
+                    String name = _nameController.text.trim();
+                    if (name.isEmpty) {
+                      name = AppStrings.untitled;
                     }
+                    double? temp;
+                    if (_temperatureController.text.isNotEmpty) {
+                      temp = double.tryParse(_temperatureController.text);
+                    }
+                    Navigator.pop(context);
+                    widget.onSave(name, _selectedWeatherConditions.isNotEmpty ? _selectedWeatherConditions.toList() : null, temp, _rating > 0 ? _rating : null);
                   },
-                  child: const Text(AppStrings.save),
+                  child: Text(AppStrings.save),
                 ),
               ],
             ),

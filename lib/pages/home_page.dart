@@ -118,6 +118,8 @@ class _HomePageState extends State<HomePage> {
                     averageSpeed: routeVM.currentAverageSpeed,
                     totalAscent: routeVM.totalAscent,
                     totalDescent: routeVM.totalDescent,
+                    pointsCount: routeVM.currentRoutePointsCount,
+                    waypointsCount: routeVM.currentWaypoints.length,
                   );
                 },
               ),
