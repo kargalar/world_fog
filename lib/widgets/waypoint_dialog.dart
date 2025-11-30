@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/route_model.dart';
+import '../utils/app_colors.dart';
 
 /// Waypoint tipi seçimi için dialog
 class WaypointTypeDialog extends StatefulWidget {
@@ -42,17 +43,17 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
   Color _getTypeColor(WaypointType type) {
     switch (type) {
       case WaypointType.scenery:
-        return Colors.green;
+        return AppColors.green;
       case WaypointType.fountain:
-        return Colors.blue;
+        return AppColors.blue;
       case WaypointType.junction:
-        return Colors.orange;
+        return AppColors.orange;
       case WaypointType.waterfall:
-        return Colors.cyan;
+        return AppColors.cyan;
       case WaypointType.breakPoint:
-        return Colors.brown;
+        return AppColors.brown;
       case WaypointType.other:
-        return Colors.purple;
+        return AppColors.purple;
     }
   }
 
@@ -88,7 +89,7 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
               // Başlık
               Row(
                 children: [
-                  const Icon(Icons.add_location, color: Colors.deepPurple),
+                  const Icon(Icons.add_location, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text('İşaret Ekle', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ],
@@ -118,9 +119,9 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_getTypeIcon(type), size: 18, color: isSelected ? Colors.white : _getTypeColor(type)),
+                        Icon(_getTypeIcon(type), size: 18, color: isSelected ? AppColors.white : _getTypeColor(type)),
                         const SizedBox(width: 6),
-                        Text(_getTypeLabel(type), style: TextStyle(color: isSelected ? Colors.white : null)),
+                        Text(_getTypeLabel(type), style: TextStyle(color: isSelected ? AppColors.white : null)),
                       ],
                     ),
                     selectedColor: _getTypeColor(type),
@@ -197,17 +198,17 @@ class WaypointDetailSheet extends StatelessWidget {
   Color _getTypeColor(WaypointType type) {
     switch (type) {
       case WaypointType.scenery:
-        return Colors.green;
+        return AppColors.green;
       case WaypointType.fountain:
-        return Colors.blue;
+        return AppColors.blue;
       case WaypointType.junction:
-        return Colors.orange;
+        return AppColors.orange;
       case WaypointType.waterfall:
-        return Colors.cyan;
+        return AppColors.cyan;
       case WaypointType.breakPoint:
-        return Colors.brown;
+        return AppColors.brown;
       case WaypointType.other:
-        return Colors.purple;
+        return AppColors.purple;
     }
   }
 
@@ -228,7 +229,7 @@ class WaypointDetailSheet extends StatelessWidget {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: AppColors.greyShade300, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 16),
@@ -243,13 +244,13 @@ class WaypointDetailSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(waypoint.typeLabel, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(_formatDateTime(waypoint.timestamp), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                    Text(_formatDateTime(waypoint.timestamp), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey)),
                   ],
                 ),
               ),
               if (onDelete != null)
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete, color: AppColors.red),
                   onPressed: onDelete,
                 ),
             ],
@@ -267,8 +268,8 @@ class WaypointDetailSheet extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Colors.grey[200],
-                      child: const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.grey)),
+                      color: AppColors.greyShade300,
+                      child: const Center(child: Icon(Icons.broken_image, size: 48, color: AppColors.grey)),
                     );
                   },
                 ),

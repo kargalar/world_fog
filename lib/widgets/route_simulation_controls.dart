@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 class RouteSimulationControls extends StatelessWidget {
   final bool isSimulating;
@@ -36,7 +37,7 @@ class RouteSimulationControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.grey[100],
+      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : AppColors.greyShade100,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -45,13 +46,13 @@ class RouteSimulationControls extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${AppStrings.progress} ${currentPointIndex + 1} / $totalPoints', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text('${AppStrings.progress} ${currentPointIndex + 1} / $totalPoints', style: const TextStyle(fontSize: 12, color: AppColors.grey)),
               if (currentSimulationTime != null)
                 Text(
                   '${currentSimulationTime!.hour.toString().padLeft(2, '0')}:'
                   '${currentSimulationTime!.minute.toString().padLeft(2, '0')}:'
                   '${currentSimulationTime!.second.toString().padLeft(2, '0')}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: AppColors.grey),
                 ),
             ],
           ),
@@ -68,7 +69,7 @@ class RouteSimulationControls extends StatelessWidget {
                   onPressed: onStartSimulation,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text(AppStrings.play),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: AppColors.white),
                 ),
               ] else ...[
                 if (!isPaused) ...[
@@ -76,14 +77,14 @@ class RouteSimulationControls extends StatelessWidget {
                     onPressed: onPauseSimulation,
                     icon: const Icon(Icons.pause),
                     label: const Text(AppStrings.pause),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.orange, foregroundColor: AppColors.white),
                   ),
                 ] else ...[
                   ElevatedButton.icon(
                     onPressed: onResumeSimulation,
                     icon: const Icon(Icons.play_arrow),
                     label: const Text(AppStrings.resume),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: AppColors.white),
                   ),
                 ],
                 const SizedBox(width: 8),
@@ -91,7 +92,7 @@ class RouteSimulationControls extends StatelessWidget {
                   onPressed: onStopSimulation,
                   icon: const Icon(Icons.stop),
                   label: const Text(AppStrings.stop),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
                 ),
               ],
             ],

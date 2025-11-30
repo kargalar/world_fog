@@ -8,6 +8,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
 import '../widgets/waypoint_dialog.dart';
+import '../utils/app_colors.dart';
 
 /// Custom marker icons for route detail page
 class _RouteMarkerIcons {
@@ -25,15 +26,15 @@ class _RouteMarkerIcons {
   static Future<void> initialize() async {
     if (_initialized) return;
 
-    routeStart = await _createCustomMarker(Icons.flag, Colors.green, 45);
-    routeEnd = await _createCustomMarker(Icons.flag_outlined, Colors.red, 45);
-    currentPosition = await _createCustomMarker(Icons.navigation, Colors.orange, 40);
-    scenery = await _createCustomMarker(Icons.landscape, Colors.green.shade700, 40);
-    fountain = await _createCustomMarker(Icons.water_drop, Colors.blue, 40);
-    junction = await _createCustomMarker(Icons.alt_route, Colors.orange, 40);
-    waterfall = await _createCustomMarker(Icons.water, Colors.cyan, 40);
-    breakPoint = await _createCustomMarker(Icons.coffee, Colors.brown, 40);
-    other = await _createCustomMarker(Icons.location_on, Colors.purple, 40);
+    routeStart = await _createCustomMarker(Icons.flag, AppColors.green, 45);
+    routeEnd = await _createCustomMarker(Icons.flag_outlined, AppColors.red, 45);
+    currentPosition = await _createCustomMarker(Icons.navigation, AppColors.orange, 40);
+    scenery = await _createCustomMarker(Icons.landscape, AppColors.greenShade700, 40);
+    fountain = await _createCustomMarker(Icons.water_drop, AppColors.blue, 40);
+    junction = await _createCustomMarker(Icons.alt_route, AppColors.orange, 40);
+    waterfall = await _createCustomMarker(Icons.water, AppColors.cyan, 40);
+    breakPoint = await _createCustomMarker(Icons.coffee, AppColors.brown, 40);
+    other = await _createCustomMarker(Icons.location_on, AppColors.purple, 40);
 
     _initialized = true;
   }
@@ -43,7 +44,7 @@ class _RouteMarkerIcons {
     final canvas = Canvas(pictureRecorder);
     final paint = Paint()..color = color;
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.3)
+      ..color = AppColors.black.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     final double markerSize = size;
@@ -57,7 +58,7 @@ class _RouteMarkerIcons {
 
     // Draw white border
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = AppColors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, borderPaint);
@@ -66,7 +67,7 @@ class _RouteMarkerIcons {
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
     textPainter.text = TextSpan(
       text: String.fromCharCode(icon.codePoint),
-      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: Colors.white),
+      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: AppColors.white),
     );
     textPainter.layout();
     textPainter.paint(canvas, Offset((markerSize - textPainter.width) / 2, (markerSize - textPainter.height) / 2));
@@ -306,16 +307,16 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.terrain, color: Colors.brown, size: 12),
+              const Icon(Icons.terrain, color: AppColors.brown, size: 12),
               const SizedBox(width: 4),
-              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: AppColors.grey)),
               if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) ...[
                 const SizedBox(width: 8),
-                const Icon(Icons.height, color: Colors.orange, size: 12),
+                const Icon(Icons.height, color: AppColors.orange, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '${currentAltitude.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.orange, fontWeight: FontWeight.bold),
                 ),
               ],
             ],
@@ -325,18 +326,18 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
             const SizedBox(height: 2),
             Row(
               children: [
-                const Icon(Icons.trending_up, color: Colors.green, size: 12),
+                const Icon(Icons.trending_up, color: AppColors.green, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '↗ ${_totalAscent.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.green, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.trending_down, color: Colors.red, size: 12),
+                const Icon(Icons.trending_down, color: AppColors.red, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '↘ ${_totalDescent.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.red, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -351,10 +352,10 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   LineChartBarData(
                     spots: points,
                     isCurved: true,
-                    color: Colors.brown,
+                    color: AppColors.brown,
                     barWidth: 1,
                     isStrokeCapRound: true,
-                    belowBarData: BarAreaData(show: true, color: Colors.brown.withAlpha(30)),
+                    belowBarData: BarAreaData(show: true, color: AppColors.brown.withAlpha(30)),
                     dotData: const FlDotData(show: false),
                   ),
                 ],
@@ -363,7 +364,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                 extraLinesData: ExtraLinesData(
                   verticalLines: [
                     // Mevcut pozisyon için dikey çizgi
-                    if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) VerticalLine(x: currentDistance / 1000, color: Colors.orange, strokeWidth: 2, dashArray: [5, 5]),
+                    if (_currentPointIndex >= 0 && _currentPointIndex < widget.route.routePoints.length) VerticalLine(x: currentDistance / 1000, color: AppColors.orange, strokeWidth: 2, dashArray: [5, 5]),
                   ],
                 ),
               ),
@@ -383,17 +384,17 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
           // Minimal kontrol paneli
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.orange.withAlpha(26),
+            color: AppColors.orange.withAlpha(26),
             child: Column(
               children: [
                 // Temel bilgiler tek satırda
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildCompactInfo(widget.route.formattedDistance, Icons.straighten, Colors.blue),
-                    _buildCompactInfo(widget.route.formattedDuration, Icons.timer, Colors.green),
-                    _buildCompactInfo(widget.route.formattedAverageSpeed, Icons.speed, Colors.purple),
-                    if (widget.route.totalBreakTime.inSeconds > 0) _buildCompactInfo(widget.route.formattedBreakTime, Icons.coffee, Colors.brown),
+                    _buildCompactInfo(widget.route.formattedDistance, Icons.straighten, AppColors.blue),
+                    _buildCompactInfo(widget.route.formattedDuration, Icons.timer, AppColors.green),
+                    _buildCompactInfo(widget.route.formattedAverageSpeed, Icons.speed, AppColors.purple),
+                    if (widget.route.totalBreakTime.inSeconds > 0) _buildCompactInfo(widget.route.formattedBreakTime, Icons.coffee, AppColors.brown),
                   ],
                 ),
                 // Hava durumu ve puan bilgisi
@@ -403,12 +404,12 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.route.weather != null) ...[
-                        Icon(_getWeatherIcon(widget.route.weather!.condition), size: 16, color: Colors.grey),
+                        Icon(_getWeatherIcon(widget.route.weather!.condition), size: 16, color: AppColors.grey),
                         const SizedBox(width: 4),
-                        Text(widget.route.weather!.conditionLabel + (widget.route.weather!.temperature != null ? ' ${widget.route.weather!.temperature!.toStringAsFixed(0)}°C' : ''), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text(widget.route.weather!.conditionLabel + (widget.route.weather!.temperature != null ? ' ${widget.route.weather!.temperature!.toStringAsFixed(0)}°C' : ''), style: const TextStyle(fontSize: 11, color: AppColors.grey)),
                         const SizedBox(width: 12),
                       ],
-                      if (widget.route.rating != null) ...[...List.generate(widget.route.rating!, (index) => const Icon(Icons.star, size: 14, color: Colors.amber)), ...List.generate(5 - widget.route.rating!, (index) => const Icon(Icons.star_border, size: 14, color: Colors.grey))],
+                      if (widget.route.rating != null) ...[...List.generate(widget.route.rating!, (index) => const Icon(Icons.star, size: 14, color: AppColors.amber)), ...List.generate(5 - widget.route.rating!, (index) => const Icon(Icons.star_border, size: 14, color: AppColors.grey))],
                     ],
                   ),
                 ],
@@ -417,7 +418,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [_buildCompactInfo(widget.route.formattedAscent, Icons.trending_up, Colors.green), _buildCompactInfo(widget.route.formattedDescent, Icons.trending_down, Colors.red), _buildCompactInfo('${widget.route.waypoints.length}', Icons.photo_camera, Colors.deepPurple)],
+                    children: [_buildCompactInfo(widget.route.formattedAscent, Icons.trending_up, AppColors.green), _buildCompactInfo(widget.route.formattedDescent, Icons.trending_down, AppColors.red), _buildCompactInfo('${widget.route.waypoints.length}', Icons.photo_camera, AppColors.deepPurple)],
                   ),
                 ],
                 // Simülasyon kontrolü
@@ -427,13 +428,13 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                     children: [
                       // Simülasyon butonları
                       if (!_isSimulating)
-                        IconButton(onPressed: _startSimulation, icon: const Icon(Icons.play_arrow), color: Colors.green, iconSize: 20)
+                        IconButton(onPressed: _startSimulation, icon: const Icon(Icons.play_arrow), color: AppColors.green, iconSize: 20)
                       else if (_isPaused)
-                        IconButton(onPressed: _resumeSimulation, icon: const Icon(Icons.play_arrow), color: Colors.green, iconSize: 20)
+                        IconButton(onPressed: _resumeSimulation, icon: const Icon(Icons.play_arrow), color: AppColors.green, iconSize: 20)
                       else
-                        IconButton(onPressed: _pauseSimulation, icon: const Icon(Icons.pause), color: Colors.orange, iconSize: 20),
+                        IconButton(onPressed: _pauseSimulation, icon: const Icon(Icons.pause), color: AppColors.orange, iconSize: 20),
 
-                      IconButton(onPressed: _isSimulating ? _stopSimulation : null, icon: const Icon(Icons.stop), color: Colors.red, iconSize: 20),
+                      IconButton(onPressed: _isSimulating ? _stopSimulation : null, icon: const Icon(Icons.stop), color: AppColors.red, iconSize: 20),
                       // Slider
                       Expanded(
                         child: Column(
@@ -443,13 +444,13 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                               min: 0.0,
                               max: 1.0,
                               divisions: widget.route.routePoints.length > 1 ? widget.route.routePoints.length - 1 : null,
-                              activeColor: Colors.orange,
-                              inactiveColor: Colors.orange.withAlpha(150),
+                              activeColor: AppColors.orange,
+                              inactiveColor: AppColors.orange.withAlpha(150),
                               onChanged: _onSliderChanged,
                               onChangeStart: _onSliderChangeStart,
                               onChangeEnd: _onSliderChangeEnd,
                             ),
-                            if (_currentSimulationTime != null) Text(_formatTime(_currentSimulationTime!), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            if (_currentSimulationTime != null) Text(_formatTime(_currentSimulationTime!), style: const TextStyle(fontSize: 10, color: AppColors.grey)),
                           ],
                         ),
                       ),
@@ -549,7 +550,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => WaypointDetailSheet(waypoint: waypoint),
     );
   }
@@ -562,11 +563,11 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // Tüm rota çizgisi
-    polylines.add(Polyline(polylineId: const PolylineId('route'), points: widget.route.routePoints.map((p) => p.position).toList(), color: isDarkMode ? Colors.lightBlue.withAlpha(128) : Colors.blue.withAlpha(128), width: 3));
+    polylines.add(Polyline(polylineId: const PolylineId('route'), points: widget.route.routePoints.map((p) => p.position).toList(), color: isDarkMode ? AppColors.lightBlue.withAlpha(128) : AppColors.blue.withAlpha(128), width: 3));
 
     // Tamamlanmış rota bölümü - simülasyon sırasında VEYA slider hareket ettirildiğinde göster
     if ((_isSimulating || _sliderValue > 0) && _currentPointIndex > 0) {
-      polylines.add(Polyline(polylineId: const PolylineId('completed'), points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: Colors.orange, width: 5));
+      polylines.add(Polyline(polylineId: const PolylineId('completed'), points: widget.route.routePoints.sublist(0, _currentPointIndex + 1).map((p) => p.position).toList(), color: AppColors.orange, width: 5));
     }
 
     return polylines;
@@ -634,7 +635,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
 
   Color _getColorForFrequency(int frequency) {
     final clampedFreq = frequency.clamp(0, 10);
-    final colors = [Colors.blue, Colors.lightBlue, Colors.cyan, Colors.teal, Colors.green, Colors.lightGreen, Colors.yellow, Colors.orange, Colors.deepOrange, Colors.red];
+    final colors = [AppColors.blue, AppColors.lightBlue, AppColors.cyan, AppColors.teal, AppColors.green, AppColors.lightGreen, AppColors.yellow, AppColors.orange, AppColors.deepOrange, AppColors.red];
     return colors[clampedFreq];
   }
 

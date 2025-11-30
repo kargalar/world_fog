@@ -3,6 +3,7 @@ import '../models/route_model.dart';
 import '../services/route_service.dart';
 import 'route_detail_page.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -51,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Navigator.pop(context);
               _deleteRoute(route.id);
             },
-            child: const Text(AppStrings.delete, style: TextStyle(color: Colors.red)),
+            child: const Text(AppStrings.delete, style: TextStyle(color: AppColors.red)),
           ),
         ],
       ),
@@ -102,13 +103,13 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.route, size: 64, color: Colors.grey),
+                  Icon(Icons.route, size: 64, color: AppColors.grey),
                   SizedBox(height: 16),
-                  Text(AppStrings.noSavedRoutes, style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text(AppStrings.noSavedRoutes, style: TextStyle(fontSize: 18, color: AppColors.grey)),
                   SizedBox(height: 8),
                   Text(
                     AppStrings.startTrackingToSave,
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(fontSize: 14, color: AppColors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -119,10 +120,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Statistics cards
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.grey[100],
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : AppColors.greyShade100,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [_buildStatCard(AppStrings.totalRoutes, '${_routes.length}', Icons.route, Colors.blue), _buildStatCard(AppStrings.totalDistance, _getTotalDistance(), Icons.straighten, Colors.green), _buildStatCard(AppStrings.totalTime, _getTotalDuration(), Icons.timer, Colors.orange)],
+                    children: [
+                      _buildStatCard(AppStrings.totalRoutes, '${_routes.length}', Icons.route, AppColors.blue),
+                      _buildStatCard(AppStrings.totalDistance, _getTotalDistance(), Icons.straighten, AppColors.green),
+                      _buildStatCard(AppStrings.totalTime, _getTotalDuration(), Icons.timer, AppColors.orange),
+                    ],
                   ),
                 ),
                 // Route list
@@ -143,11 +148,11 @@ class _ProfilePageState extends State<ProfilePage> {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.straighten, size: 16, color: Colors.grey[600]),
+                                  Icon(Icons.straighten, size: 16, color: AppColors.greyShade700),
                                   const SizedBox(width: 4),
                                   Text(route.formattedDistance),
                                   const SizedBox(width: 16),
-                                  Icon(Icons.timer, size: 16, color: Colors.grey[600]),
+                                  Icon(Icons.timer, size: 16, color: AppColors.greyShade700),
                                   const SizedBox(width: 4),
                                   Text(route.formattedDuration),
                                 ],
@@ -156,7 +161,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(Icons.coffee, size: 16, color: Colors.orange[600]),
+                                    Icon(Icons.coffee, size: 16, color: AppColors.orangeShade600),
                                     const SizedBox(width: 4),
                                     Text('${AppStrings.breakLabel} ${route.formattedBreakTime}'),
                                   ],
@@ -175,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 },
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
+                                icon: const Icon(Icons.delete, color: AppColors.red),
                                 onPressed: () => _showDeleteConfirmation(route),
                               ),
                             ],
@@ -196,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(title, style: const TextStyle(fontSize: 12, color: AppColors.grey)),
         const SizedBox(height: 4),
         Text(
           value,

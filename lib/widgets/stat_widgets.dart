@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 
 class StatCard extends StatelessWidget {
   final String title;
@@ -14,7 +15,7 @@ class StatCard extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(title, style: const TextStyle(fontSize: 12, color: AppColors.grey)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -34,7 +35,7 @@ class StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : Colors.grey[100],
+      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F1F1F) : AppColors.greyShade100,
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: stats),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 /// Route name dialog
 class RouteNameDialog extends StatefulWidget {
@@ -83,17 +84,17 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
   Color _getWeatherColor(WeatherCondition condition) {
     switch (condition) {
       case WeatherCondition.sunny:
-        return Colors.orange;
+        return AppColors.orange;
       case WeatherCondition.cloudy:
-        return Colors.grey;
+        return AppColors.grey;
       case WeatherCondition.rainy:
-        return Colors.blue;
+        return AppColors.blue;
       case WeatherCondition.snowy:
-        return Colors.lightBlue;
+        return AppColors.lightBlue;
       case WeatherCondition.windy:
-        return Colors.teal;
+        return AppColors.teal;
       case WeatherCondition.foggy:
-        return Colors.blueGrey;
+        return AppColors.blueGrey;
     }
   }
 
@@ -199,7 +200,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                           label: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(_getWeatherIcon(condition), size: 16, color: isSelected ? Colors.white : _getWeatherColor(condition)),
+                              Icon(_getWeatherIcon(condition), size: 16, color: isSelected ? AppColors.white : _getWeatherColor(condition)),
                               const SizedBox(width: 4),
                               Text(
                                 condition == WeatherCondition.sunny
@@ -213,7 +214,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                                     : condition == WeatherCondition.windy
                                     ? 'Rüzgarlı'
                                     : 'Sisli',
-                                style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null),
+                                style: TextStyle(fontSize: 12, color: isSelected ? AppColors.white : null),
                               ),
                             ],
                           ),
@@ -259,7 +260,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.star, size: 20, color: Colors.amber),
+                        const Icon(Icons.star, size: 20, color: AppColors.amber),
                         const SizedBox(width: 8),
                         Text('Rotayı Puanla', style: Theme.of(context).textTheme.titleSmall),
                       ],
@@ -269,7 +270,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(5, (index) {
                         return IconButton(
-                          icon: Icon(index < _rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 32),
+                          icon: Icon(index < _rating ? Icons.star : Icons.star_border, color: AppColors.amber, size: 32),
                           onPressed: () {
                             setState(() {
                               _rating = index + 1;

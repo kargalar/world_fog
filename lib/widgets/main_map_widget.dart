@@ -8,6 +8,7 @@ import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../pages/profile_page.dart';
 import '../pages/settings_page.dart';
+import '../utils/app_colors.dart';
 import '../utils/app_strings.dart';
 import 'waypoint_dialog.dart';
 
@@ -27,15 +28,15 @@ class MarkerIcons {
   static Future<void> initialize() async {
     if (_initialized) return;
 
-    currentLocation = await _createCustomMarker(Icons.my_location, Colors.blue, 40);
-    routeStart = await _createCustomMarker(Icons.flag, Colors.green, 45);
-    routeEnd = await _createCustomMarker(Icons.flag_outlined, Colors.red, 45);
-    breakPoint = await _createCustomMarker(Icons.coffee, Colors.brown, 40);
-    scenery = await _createCustomMarker(Icons.landscape, Colors.green.shade700, 40);
-    fountain = await _createCustomMarker(Icons.water_drop, Colors.blue, 40);
-    junction = await _createCustomMarker(Icons.alt_route, Colors.orange, 40);
-    waterfall = await _createCustomMarker(Icons.water, Colors.cyan, 40);
-    other = await _createCustomMarker(Icons.location_on, Colors.purple, 40);
+    currentLocation = await _createCustomMarker(Icons.my_location, AppColors.blue, 40);
+    routeStart = await _createCustomMarker(Icons.flag, AppColors.green, 45);
+    routeEnd = await _createCustomMarker(Icons.flag_outlined, AppColors.red, 45);
+    breakPoint = await _createCustomMarker(Icons.coffee, AppColors.brown, 40);
+    scenery = await _createCustomMarker(Icons.landscape, AppColors.greenShade700, 40);
+    fountain = await _createCustomMarker(Icons.water_drop, AppColors.blue, 40);
+    junction = await _createCustomMarker(Icons.alt_route, AppColors.orange, 40);
+    waterfall = await _createCustomMarker(Icons.water, AppColors.cyan, 40);
+    other = await _createCustomMarker(Icons.location_on, AppColors.purple, 40);
 
     _initialized = true;
   }
@@ -45,7 +46,7 @@ class MarkerIcons {
     final canvas = Canvas(pictureRecorder);
     final paint = Paint()..color = color;
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.3)
+      ..color = AppColors.black.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     final double markerSize = size;
@@ -59,7 +60,7 @@ class MarkerIcons {
 
     // Draw white border
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = AppColors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawCircle(Offset(markerSize / 2, markerSize / 2), markerSize / 2 - 2, borderPaint);
@@ -68,7 +69,7 @@ class MarkerIcons {
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
     textPainter.text = TextSpan(
       text: String.fromCharCode(icon.codePoint),
-      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: Colors.white),
+      style: TextStyle(fontSize: iconSize, fontFamily: icon.fontFamily, package: icon.fontPackage, color: AppColors.white),
     );
     textPainter.layout();
     textPainter.paint(canvas, Offset((markerSize - textPainter.width) / 2, (markerSize - textPainter.height) / 2));
@@ -209,7 +210,7 @@ class _MainMapWidgetState extends State<MainMapWidget> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => WaypointDetailSheet(
         waypoint: waypoint,
         onDelete: () {
@@ -228,13 +229,13 @@ class _MainMapWidgetState extends State<MainMapWidget> {
     if (mapVM.showPastRoutes && routeVM.pastRoutes.isNotEmpty) {
       for (int i = 0; i < routeVM.pastRoutes.length; i++) {
         final route = routeVM.pastRoutes[i];
-        polylines.add(Polyline(polylineId: PolylineId('past_route_$i'), points: route.routePoints.map((point) => point.position).toList(), color: Colors.yellow, width: 4));
+        polylines.add(Polyline(polylineId: PolylineId('past_route_$i'), points: route.routePoints.map((point) => point.position).toList(), color: AppColors.yellow, width: 4));
       }
     }
 
     // Mevcut rota
     if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty) {
-      polylines.add(Polyline(polylineId: const PolylineId('current_route'), points: routeVM.currentRoutePoints.map((point) => point.position).toList(), color: Colors.red, width: 4));
+      polylines.add(Polyline(polylineId: const PolylineId('current_route'), points: routeVM.currentRoutePoints.map((point) => point.position).toList(), color: AppColors.red, width: 4));
     }
 
     return polylines;
@@ -259,7 +260,7 @@ class _MainMapWidgetState extends State<MainMapWidget> {
         final minLng = lngGrid * gridSizeDegrees;
         final maxLng = (lngGrid + 1) * gridSizeDegrees;
 
-        polygons.add(Polygon(polygonId: PolygonId('grid_$index'), points: [LatLng(minLat, minLng), LatLng(maxLat, minLng), LatLng(maxLat, maxLng), LatLng(minLat, maxLng)], fillColor: Colors.blue.withValues(alpha: 0.2), strokeColor: Colors.blue.withValues(alpha: 0.5), strokeWidth: 1));
+        polygons.add(Polygon(polygonId: PolygonId('grid_$index'), points: [LatLng(minLat, minLng), LatLng(maxLat, minLng), LatLng(maxLat, maxLng), LatLng(minLat, maxLng)], fillColor: AppColors.blue.withValues(alpha: 0.2), strokeColor: AppColors.blue.withValues(alpha: 0.5), strokeWidth: 1));
         index++;
       } catch (e) {
         continue;
@@ -284,7 +285,7 @@ class MapControlButtons extends StatelessWidget {
           child: Column(
             children: [
               // Map type button
-              _buildControlButton(icon: _getMapTypeIcon(mapVM.mapType), onPressed: () => _showMapTypeSelector(context, mapVM), backgroundColor: Colors.white, iconColor: Colors.grey, tooltip: 'Harita Görünümü'),
+              _buildControlButton(icon: _getMapTypeIcon(mapVM.mapType), onPressed: () => _showMapTypeSelector(context, mapVM), backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: 'Harita Görünümü'),
 
               const SizedBox(height: 8),
 
@@ -299,8 +300,8 @@ class MapControlButtons extends StatelessWidget {
                     }
                   }
                 },
-                backgroundColor: mapVM.isFollowingLocation ? Colors.blue : Colors.white,
-                iconColor: mapVM.isFollowingLocation ? Colors.white : Colors.grey,
+                backgroundColor: mapVM.isFollowingLocation ? AppColors.blue : AppColors.white,
+                iconColor: mapVM.isFollowingLocation ? AppColors.white : AppColors.grey,
                 tooltip: AppStrings.followMyLocation,
               ),
 
@@ -310,8 +311,8 @@ class MapControlButtons extends StatelessWidget {
               _buildControlButton(
                 icon: mapVM.showPastRoutes ? Icons.visibility_off : Icons.visibility,
                 onPressed: () => mapVM.togglePastRoutes(),
-                backgroundColor: mapVM.showPastRoutes ? Colors.orange : Colors.white,
-                iconColor: mapVM.showPastRoutes ? Colors.white : Colors.grey,
+                backgroundColor: mapVM.showPastRoutes ? AppColors.orange : AppColors.white,
+                iconColor: mapVM.showPastRoutes ? AppColors.white : AppColors.grey,
                 tooltip: AppStrings.pastRoutes,
               ),
 
@@ -321,8 +322,8 @@ class MapControlButtons extends StatelessWidget {
               _buildControlButton(
                 icon: Icons.person,
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
-                backgroundColor: Colors.white,
-                iconColor: Colors.grey,
+                backgroundColor: AppColors.white,
+                iconColor: AppColors.grey,
                 tooltip: AppStrings.profileAndRouteHistory,
               ),
 
@@ -337,8 +338,8 @@ class MapControlButtons extends StatelessWidget {
                     builder: (context) => SettingsPage(onRadiusChanged: (newRadius) => mapVM.updateExplorationRadius(newRadius), onOpacityChanged: (newOpacity) => mapVM.updateAreaOpacity(newOpacity)),
                   ),
                 ),
-                backgroundColor: Colors.white,
-                iconColor: Colors.grey,
+                backgroundColor: AppColors.white,
+                iconColor: AppColors.grey,
                 tooltip: AppStrings.settings,
               ),
             ],
@@ -404,18 +405,18 @@ class MapControlButtons extends StatelessWidget {
         width: 80,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+          color: isSelected ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : AppColors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? Theme.of(context).primaryColor : Colors.transparent, width: 2),
+          border: Border.all(color: isSelected ? Theme.of(context).primaryColor : AppColors.transparent, width: 2),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: isSelected ? Theme.of(context).primaryColor : Colors.grey),
+            Icon(icon, size: 32, color: isSelected ? Theme.of(context).primaryColor : AppColors.grey),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Theme.of(context).primaryColor : Colors.grey),
+              style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Theme.of(context).primaryColor : AppColors.grey),
             ),
           ],
         ),
@@ -430,7 +431,7 @@ class MapControlButtons extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
         ),
         child: IconButton(
           icon: Icon(icon, color: iconColor),

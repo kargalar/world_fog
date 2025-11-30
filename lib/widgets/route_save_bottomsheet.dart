@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 /// Route save bottom sheet - replaces RouteNameDialog
 class RouteSaveBottomSheet extends StatefulWidget {
@@ -101,17 +102,17 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
   Color _getWeatherColor(WeatherCondition condition) {
     switch (condition) {
       case WeatherCondition.sunny:
-        return Colors.orange;
+        return AppColors.orange;
       case WeatherCondition.cloudy:
-        return Colors.grey;
+        return AppColors.grey;
       case WeatherCondition.rainy:
-        return Colors.blue;
+        return AppColors.blue;
       case WeatherCondition.snowy:
-        return Colors.lightBlue;
+        return AppColors.lightBlue;
       case WeatherCondition.windy:
-        return Colors.teal;
+        return AppColors.teal;
       case WeatherCondition.foggy:
-        return Colors.blueGrey;
+        return AppColors.blueGrey;
     }
   }
 
@@ -146,7 +147,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               Navigator.pop(context);
               widget.onDelete();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
             child: const Text('Sil'),
           ),
         ],
@@ -172,7 +173,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: AppColors.greyShade300, borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
@@ -202,26 +203,26 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                   // First row: Distance, Duration, Avg Speed
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.straighten, 'Mesafe', _formatDistance(widget.distance), Colors.blue)),
-                      Expanded(child: _buildCompactDetail(Icons.timer, 'Süre', _formatDuration(widget.duration), Colors.green)),
-                      Expanded(child: _buildCompactDetail(Icons.speed, 'Ort. Hız', '${widget.averageSpeed.toStringAsFixed(1)} km/h', Colors.purple)),
+                      Expanded(child: _buildCompactDetail(Icons.straighten, 'Mesafe', _formatDistance(widget.distance), AppColors.blue)),
+                      Expanded(child: _buildCompactDetail(Icons.timer, 'Süre', _formatDuration(widget.duration), AppColors.green)),
+                      Expanded(child: _buildCompactDetail(Icons.speed, 'Ort. Hız', '${widget.averageSpeed.toStringAsFixed(1)} km/h', AppColors.purple)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Second row: Ascent, Descent, Break time
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.trending_up, 'Çıkış', '${widget.totalAscent.toStringAsFixed(0)}m', Colors.green)),
-                      Expanded(child: _buildCompactDetail(Icons.trending_down, 'İniş', '${widget.totalDescent.toStringAsFixed(0)}m', Colors.red)),
-                      Expanded(child: _buildCompactDetail(Icons.coffee, 'Mola', _formatDuration(widget.totalBreakTime), Colors.brown)),
+                      Expanded(child: _buildCompactDetail(Icons.trending_up, 'Çıkış', '${widget.totalAscent.toStringAsFixed(0)}m', AppColors.green)),
+                      Expanded(child: _buildCompactDetail(Icons.trending_down, 'İniş', '${widget.totalDescent.toStringAsFixed(0)}m', AppColors.red)),
+                      Expanded(child: _buildCompactDetail(Icons.coffee, 'Mola', _formatDuration(widget.totalBreakTime), AppColors.brown)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   // Third row: Points count, Waypoints count
                   Row(
                     children: [
-                      Expanded(child: _buildCompactDetail(Icons.location_on, 'Nokta', '${widget.pointsCount}', Colors.orange)),
-                      Expanded(child: _buildCompactDetail(Icons.photo_camera, 'İşaret', '${widget.waypointsCount}', Colors.deepPurple)),
+                      Expanded(child: _buildCompactDetail(Icons.location_on, 'Nokta', '${widget.pointsCount}', AppColors.orange)),
+                      Expanded(child: _buildCompactDetail(Icons.photo_camera, 'İşaret', '${widget.waypointsCount}', AppColors.deepPurple)),
                       const Expanded(child: SizedBox()),
                     ],
                   ),
@@ -289,9 +290,9 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                         label: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(_getWeatherIcon(condition), size: 14, color: isSelected ? Colors.white : _getWeatherColor(condition)),
+                            Icon(_getWeatherIcon(condition), size: 14, color: isSelected ? AppColors.white : _getWeatherColor(condition)),
                             const SizedBox(width: 3),
-                            Text(_getWeatherLabel(condition), style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : null)),
+                            Text(_getWeatherLabel(condition), style: TextStyle(fontSize: 11, color: isSelected ? AppColors.white : null)),
                           ],
                         ),
                         selectedColor: _getWeatherColor(condition),
@@ -323,7 +324,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.star, size: 16, color: Colors.amber),
+                  const Icon(Icons.star, size: 16, color: AppColors.amber),
                   const SizedBox(width: 6),
                   Text('Puan', style: Theme.of(context).textTheme.labelLarge),
                   const Spacer(),
@@ -336,7 +337,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Icon(index < _rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 28),
+                        child: Icon(index < _rating ? Icons.star : Icons.star_border, color: AppColors.amber, size: 28),
                       ),
                     );
                   }),
@@ -349,7 +350,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
             Row(
               children: [
                 // Delete button
-                IconButton(onPressed: _confirmDelete, icon: const Icon(Icons.delete_outline), color: Colors.red, tooltip: 'Rotayı Sil'),
+                IconButton(onPressed: _confirmDelete, icon: const Icon(Icons.delete_outline), color: AppColors.red, tooltip: 'Rotayı Sil'),
                 const Spacer(),
                 // Cancel button
                 TextButton(
@@ -388,7 +389,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 9, color: AppColors.grey)),
         Text(
           value,
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
@@ -417,7 +418,7 @@ void showRouteSaveBottomSheet({
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppColors.transparent,
     builder: (context) =>
         RouteSaveBottomSheet(distance: distance, duration: duration, pointsCount: pointsCount, totalAscent: totalAscent, totalDescent: totalDescent, averageSpeed: averageSpeed, totalBreakTime: totalBreakTime, waypointsCount: waypointsCount, onSave: onSave, onDelete: onDelete, onCancel: onCancel),
   );

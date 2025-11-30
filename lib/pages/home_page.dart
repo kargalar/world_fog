@@ -8,6 +8,7 @@ import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../widgets/main_map_widget.dart';
+import '../utils/app_colors.dart';
 import '../widgets/route_control_panel.dart';
 import '../widgets/route_stats_card.dart';
 import '../widgets/world_fog_app.dart';
@@ -127,8 +128,8 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: context.watch<RouteViewModel>().isActive
           ? FloatingActionButton(
               onPressed: _addWaypoint,
-              backgroundColor: Colors.deepPurple,
-              child: const Icon(Icons.add_a_photo, color: Colors.white),
+              backgroundColor: AppColors.deepPurple,
+              child: const Icon(Icons.add_a_photo, color: AppColors.white),
             )
           : null,
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 class RouteStatsCard extends StatelessWidget {
   final double currentRouteDistance;
@@ -30,10 +31,10 @@ class RouteStatsCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: AppColors.orange.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
                     child: const Text(
                       'Durakladı',
-                      style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 12, color: AppColors.orange, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -44,9 +45,9 @@ class RouteStatsCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('Mesafe', _formatDistance(currentRouteDistance), Icons.straighten, Colors.blue),
-                _buildStatItem('Süre', _formatDuration(currentRouteDuration), Icons.timer, Colors.green),
-                _buildStatItem('Mola', _formatDuration(currentBreakDuration), Icons.coffee, Colors.orange),
+                _buildStatItem('Mesafe', _formatDistance(currentRouteDistance), Icons.straighten, AppColors.blue),
+                _buildStatItem('Süre', _formatDuration(currentRouteDuration), Icons.timer, AppColors.green),
+                _buildStatItem('Mola', _formatDuration(currentBreakDuration), Icons.coffee, AppColors.orange),
               ],
             ),
             const SizedBox(height: 12),
@@ -54,9 +55,9 @@ class RouteStatsCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('Ort. Hız', '${averageSpeed.toStringAsFixed(1)} km/h', Icons.speed, Colors.purple),
-                _buildStatItem('Çıkış', '${totalAscent.toStringAsFixed(0)}m', Icons.trending_up, Colors.green),
-                _buildStatItem('İniş', '${totalDescent.toStringAsFixed(0)}m', Icons.trending_down, Colors.red),
+                _buildStatItem('Ort. Hız', '${averageSpeed.toStringAsFixed(1)} km/h', Icons.speed, AppColors.purple),
+                _buildStatItem('Çıkış', '${totalAscent.toStringAsFixed(0)}m', Icons.trending_up, AppColors.green),
+                _buildStatItem('İniş', '${totalDescent.toStringAsFixed(0)}m', Icons.trending_down, AppColors.red),
               ],
             ),
           ],
@@ -70,7 +71,7 @@ class RouteStatsCard extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.grey)),
         const SizedBox(height: 1),
         Text(
           value,

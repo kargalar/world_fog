@@ -5,6 +5,8 @@ import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../pages/home_page.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_theme.dart';
+import '../utils/app_colors.dart';
 
 /// Main application widget
 class WorldFogApp extends StatelessWidget {
@@ -15,10 +17,7 @@ class WorldFogApp extends StatelessWidget {
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.light),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       home: MultiProvider(
         providers: [
@@ -157,7 +156,7 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.red),
               const SizedBox(height: 16),
               Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 16),
@@ -196,7 +195,7 @@ class ErrorDisplay extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.red),
             const SizedBox(height: 16),
             Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
             if (onRetry != null) ...[const SizedBox(height: 16), ElevatedButton(onPressed: onRetry, child: const Text(AppStrings.tryAgain))],
@@ -234,11 +233,11 @@ class SnackBarHelper {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.red,
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: AppStrings.close,
-          textColor: Colors.white,
+          textColor: AppColors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
           },
@@ -248,10 +247,10 @@ class SnackBarHelper {
   }
 
   static void showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.green, duration: const Duration(seconds: 2)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.green, duration: const Duration(seconds: 2)));
   }
 
   static void showInfo(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.blue, duration: const Duration(seconds: 2)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: AppColors.blue, duration: const Duration(seconds: 2)));
   }
 }

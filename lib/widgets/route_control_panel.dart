@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 class RouteControlPanel extends StatelessWidget {
   final bool isTracking;
@@ -21,7 +22,7 @@ class RouteControlPanel extends StatelessWidget {
             onPressed: onStartTracking,
             icon: const Icon(Icons.play_arrow),
             label: const Text(AppStrings.startTracking),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: AppColors.white),
           ),
         ] else ...[
           if (!isPaused) ...[
@@ -29,7 +30,7 @@ class RouteControlPanel extends StatelessWidget {
               onPressed: onPauseTracking,
               icon: const Icon(Icons.pause),
               label: const Text(AppStrings.pause),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.orange, foregroundColor: AppColors.white),
             ),
             const SizedBox(width: 8),
           ] else ...[
@@ -37,7 +38,7 @@ class RouteControlPanel extends StatelessWidget {
               onPressed: onResumeTracking,
               icon: const Icon(Icons.play_arrow),
               label: const Text(AppStrings.resume),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.green, foregroundColor: AppColors.white),
             ),
             const SizedBox(width: 8),
           ],
@@ -45,7 +46,7 @@ class RouteControlPanel extends StatelessWidget {
             onPressed: onStopTracking,
             icon: const Icon(Icons.stop),
             label: const Text(AppStrings.stop),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
           ),
         ],
       ],

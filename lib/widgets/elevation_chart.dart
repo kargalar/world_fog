@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/route_model.dart';
 import '../utils/app_strings.dart';
+import '../utils/app_colors.dart';
 
 class ElevationChart extends StatelessWidget {
   final List<RoutePoint> routePoints;
@@ -86,16 +87,16 @@ class ElevationChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.terrain, color: Colors.brown, size: 12),
+              const Icon(Icons.terrain, color: AppColors.brown, size: 12),
               const SizedBox(width: 4),
-              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text('${AppStrings.elevation} ${minAltitude.toStringAsFixed(0)}-${maxAltitude.toStringAsFixed(0)}m', style: const TextStyle(fontSize: 10, color: AppColors.grey)),
               if (currentPointIndex >= 0 && currentPointIndex < routePoints.length) ...[
                 const SizedBox(width: 8),
-                const Icon(Icons.height, color: Colors.orange, size: 12),
+                const Icon(Icons.height, color: AppColors.orange, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '${currentAltitude.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.orange, fontWeight: FontWeight.bold),
                 ),
               ],
             ],
@@ -104,18 +105,18 @@ class ElevationChart extends StatelessWidget {
             const SizedBox(height: 2),
             Row(
               children: [
-                const Icon(Icons.trending_up, color: Colors.green, size: 12),
+                const Icon(Icons.trending_up, color: AppColors.green, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '↗ ${_totalAscent.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.green, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.trending_down, color: Colors.red, size: 12),
+                const Icon(Icons.trending_down, color: AppColors.red, size: 12),
                 const SizedBox(width: 2),
                 Text(
                   '↘ ${_totalDescent.toStringAsFixed(0)}m',
-                  style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 10, color: AppColors.red, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -130,23 +131,23 @@ class ElevationChart extends StatelessWidget {
                   LineChartBarData(
                     spots: points,
                     isCurved: true,
-                    color: Colors.brown,
+                    color: AppColors.brown,
                     barWidth: 2,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: Colors.brown.withAlpha(51)),
+                    belowBarData: BarAreaData(show: true, color: AppColors.brown.withAlpha(51)),
                   ),
                   // Mevcut pozisyon işaretçisi
                   if (currentPointIndex >= 0 && currentPointIndex < routePoints.length)
                     LineChartBarData(
                       spots: [FlSpot(currentDistance / 1000, currentAltitude)],
                       isCurved: false,
-                      color: Colors.orange,
+                      color: AppColors.orange,
                       barWidth: 0,
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(radius: 3, color: Colors.orange, strokeWidth: 2, strokeColor: Colors.white);
+                          return FlDotCirclePainter(radius: 3, color: AppColors.orange, strokeWidth: 2, strokeColor: AppColors.white);
                         },
                       ),
                     ),
