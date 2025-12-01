@@ -158,9 +158,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       context: context,
       barrierDismissible: false,
       builder: (context) => PopScope(
-        onPopInvokedWithResult: (bool _, _) async {
-          // Geri tuşuna basılsa bile dialog kapanmasın
-        },
+        canPop: false,
         child: AlertDialog(
           backgroundColor: AppColors.red.withAlpha(230),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -189,6 +187,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           actions: [
             ElevatedButton.icon(
               onPressed: () async {
+                // Önce izin iste, sonra servisi aç
+                await Location().requestPermission();
                 await Location().requestService();
                 // Ayarlardan döndükten sonra durumu kontrol et
                 await Future.delayed(const Duration(milliseconds: 500));
@@ -260,6 +260,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: () async {
+                              // Önce izin iste, sonra servisi aç
+                              await Location().requestPermission();
                               await Location().requestService();
                             },
                             icon: const Icon(Icons.location_on),

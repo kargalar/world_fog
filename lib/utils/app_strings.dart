@@ -175,6 +175,26 @@ class AppStrings {
   static const String signOut = 'Sign Out';
   static const String signedOut = 'Signed out';
 
+  // Import/Export
+  static const String dataManagement = 'Data Management';
+  static const String exportRoutes = 'Export Routes';
+  static const String exportRoutesDescription = 'Export all route data as a JSON file';
+  static const String importRoutes = 'Import Routes';
+  static const String importRoutesDescription = 'Import route data from a JSON file';
+  static const String exportSuccess = 'Routes exported successfully';
+  static const String exportFailed = 'Export failed';
+  static const String noRoutesToExport = 'No routes to export';
+  static const String importSuccess = 'Import Successful';
+  static const String importFailed = 'Import failed';
+  static const String importOptions = 'Import Options';
+  static const String mergeWithExisting = 'Merge with existing';
+  static const String mergeDescription = 'Add imported routes to existing routes (skip duplicates)';
+  static const String replaceExisting = 'Replace existing';
+  static const String replaceDescription = 'Delete all existing routes and import new ones';
+  static const String importing = 'Importing...';
+  static const String appWillClose = 'The app will close to apply changes.';
+  static const String ok = 'OK';
+
   // Duration format
   static const String hoursShort = 'h';
   static const String minutesShort = 'm';

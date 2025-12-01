@@ -161,7 +161,8 @@ class _MainMapWidgetState extends State<MainMapWidget> {
                 right: 16,
                 child: GestureDetector(
                   onTap: () async {
-                    // Konum servislerini açmak için dialoğu çağır
+                    // Önce izin iste, sonra konum servislerini aç
+                    await Location().requestPermission();
                     await Location().requestService();
                   },
                   child: Card(

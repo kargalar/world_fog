@@ -11,4 +11,4 @@ yükseklik hala gelmiyor.
 
 import export
 
-app name and package name
+google services json for google login. kodlar zaten yazıldı. sadece yorum satırında çıkaırlacak.

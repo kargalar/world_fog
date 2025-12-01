@@ -170,7 +170,8 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
 
   /// Konum servisi kapalı dialog'u
   Future<void> _showLocationServiceDisabledDialog(LocationViewModel locationVM) async {
-    // Doğrudan konum servisini açma dialog'unu göster
+    // Önce izin iste, sonra servisi aç
+    await Location().requestPermission();
     await Location().requestService();
     // Kullanıcı dialog'dan döndükten sonra tekrar kontrol et
     await Future.delayed(const Duration(milliseconds: 500));
