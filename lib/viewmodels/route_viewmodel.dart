@@ -383,6 +383,8 @@ class RouteViewModel extends ChangeNotifier {
     LatLng? lastPointPosition;
     double currentAltitude = location.altitude ?? 0.0;
 
+    debugPrint('🏔️ Yükseklik verisi: ${location.altitude} -> currentAltitude: $currentAltitude');
+
     // İlk nokta için lastAltitude'u ayarla
     if (_currentRoutePoints.isEmpty) {
       _lastAltitude = currentAltitude;

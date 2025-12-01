@@ -9,6 +9,4 @@ diğerlerinin rotasının takip edebilme. o rotayı takip edenlerin listesi ve o
 
 yükseklik hala gelmiyor.
 
-import export
-
 google services json for google login. kodlar zaten yazıldı. sadece yorum satırında çıkaırlacak.

@@ -161,6 +161,7 @@ class LocationService {
       _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
         (Position position) {
           debugPrint('📍 YENİ KONUM ALINDI: ${position.latitude}, ${position.longitude}');
+          debugPrint('📍 Altitude: ${position.altitude}, isMocked: ${position.isMocked}');
           final locationModel = LocationModel(position: LatLng(position.latitude, position.longitude), bearing: position.heading >= 0 ? position.heading : null, accuracy: position.accuracy, altitude: position.altitude, timestamp: DateTime.now());
 
           _locationController.add(locationModel);
