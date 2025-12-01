@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/route_model.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_strings.dart';
 
 /// Waypoint tipi seçimi için dialog
 class WaypointTypeDialog extends StatefulWidget {
@@ -62,15 +63,15 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
       case WaypointType.scenery:
         return 'Manzara';
       case WaypointType.fountain:
-        return 'Çeşme';
+        return AppStrings.fountain;
       case WaypointType.junction:
-        return 'Yol Ayrımı';
+        return AppStrings.junction;
       case WaypointType.waterfall:
-        return 'Şelale';
+        return AppStrings.waterfall;
       case WaypointType.breakPoint:
         return 'Mola';
       case WaypointType.other:
-        return 'Diğer';
+        return AppStrings.other;
     }
   }
 
@@ -91,7 +92,7 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
                 children: [
                   const Icon(Icons.add_location, color: AppColors.primary),
                   const SizedBox(width: 8),
-                  Text('İşaret Ekle', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(AppStrings.addWaypointTitle, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -107,7 +108,7 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
               const SizedBox(height: 16),
 
               // İşaret tipi seçimi
-              Text('İşaret Tipi', style: Theme.of(context).textTheme.titleSmall),
+              Text(AppStrings.waypointType, style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -142,8 +143,8 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
                 controller: _descriptionController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  labelText: 'Açıklama (Opsiyonel)',
-                  hintText: 'Bu yer hakkında bir not ekleyin...',
+                  labelText: AppStrings.descriptionOptional,
+                  hintText: AppStrings.addNoteHint,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -153,13 +154,13 @@ class _WaypointTypeDialogState extends State<WaypointTypeDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+                  TextButton(onPressed: () => Navigator.pop(context), child: Text(AppStrings.cancel)),
                   const SizedBox(width: 12),
                   FilledButton(
                     onPressed: () {
                       Navigator.pop(context, {'type': _selectedType, 'description': _descriptionController.text.trim().isNotEmpty ? _descriptionController.text.trim() : null});
                     },
-                    child: const Text('Ekle'),
+                    child: Text(AppStrings.add),
                   ),
                 ],
               ),

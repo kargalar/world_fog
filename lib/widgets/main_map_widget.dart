@@ -198,7 +198,7 @@ class _MainMapWidgetState extends State<MainMapWidget> {
           markerId: const MarkerId('current_location'),
           position: currentPosition,
           icon: MarkerIcons.currentLocation ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Konumunuz'),
+          infoWindow: const InfoWindow(title: 'Your Location'),
           anchor: const Offset(0.5, 0.5),
         ),
       );
@@ -211,7 +211,7 @@ class _MainMapWidgetState extends State<MainMapWidget> {
           markerId: const MarkerId('route_start'),
           position: routeVM.currentRoutePoints.first.position,
           icon: MarkerIcons.routeStart ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: const InfoWindow(title: 'Başlangıç'),
+          infoWindow: const InfoWindow(title: 'Start'),
           anchor: const Offset(0.5, 0.5),
         ),
       );
@@ -317,7 +317,7 @@ class MapControlButtons extends StatelessWidget {
           child: Column(
             children: [
               // Map type button
-              _buildControlButton(icon: _getMapTypeIcon(mapVM.mapType), onPressed: () => _showMapTypeSelector(context, mapVM), backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: 'Harita Görünümü'),
+              _buildControlButton(icon: _getMapTypeIcon(mapVM.mapType), onPressed: () => _showMapTypeSelector(context, mapVM), backgroundColor: AppColors.white, iconColor: AppColors.grey, tooltip: AppStrings.mapViewTitle),
 
               const SizedBox(height: 8),
 
@@ -390,16 +390,16 @@ class MapControlButtons extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Harita Görünümü', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(AppStrings.mapViewTitle, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildMapTypeOption(context, mapVM, MapType.normal, 'Normal', Icons.map),
-                _buildMapTypeOption(context, mapVM, MapType.satellite, 'Uydu', Icons.satellite),
-                _buildMapTypeOption(context, mapVM, MapType.terrain, 'Arazi', Icons.terrain),
-                _buildMapTypeOption(context, mapVM, MapType.hybrid, 'Hibrit', Icons.layers),
+                _buildMapTypeOption(context, mapVM, MapType.normal, AppStrings.normalMap, Icons.map),
+                _buildMapTypeOption(context, mapVM, MapType.satellite, AppStrings.satelliteMap, Icons.satellite),
+                _buildMapTypeOption(context, mapVM, MapType.terrain, AppStrings.terrainMap, Icons.terrain),
+                _buildMapTypeOption(context, mapVM, MapType.hybrid, AppStrings.hybridMap, Icons.layers),
               ],
             ),
             const SizedBox(height: 20),

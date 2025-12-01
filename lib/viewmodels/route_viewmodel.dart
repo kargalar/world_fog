@@ -211,7 +211,7 @@ class RouteViewModel extends ChangeNotifier {
     if (_routeStartTime != null && _currentRoutePoints.isNotEmpty) {
       final route = RouteModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: 'Rota ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+        name: 'Route ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
         routePoints: List.from(_currentRoutePoints),
         exploredAreas: List.from(_currentRouteExploredAreas),
         waypoints: List.from(_currentWaypoints),

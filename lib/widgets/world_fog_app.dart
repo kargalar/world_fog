@@ -187,19 +187,16 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
           children: [
             Icon(Icons.location_disabled, color: AppColors.orange),
             const SizedBox(width: 8),
-            const Text('Konum İzni Gerekli'),
+            Text(AppStrings.locationPermissionRequired),
           ],
         ),
-        content: const Text(
-          'World Fog uygulamasının haritada konumunuzu gösterebilmesi ve '
-          'keşfettiğiniz alanları kaydedebilmesi için konum iznine ihtiyacı vardır.',
-        ),
+        content: Text(AppStrings.locationPermissionMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Daha Sonra')),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(AppStrings.later)),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
-            child: const Text('İzin Ver'),
+            child: Text(AppStrings.grantPermission),
           ),
         ],
       ),

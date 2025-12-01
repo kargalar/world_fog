@@ -120,8 +120,8 @@ class NotificationService {
   Future<void> _showNotification(Duration currentDuration, {required bool isPaused}) async {
     final androidDetails = AndroidNotificationDetails(
       'route_tracking',
-      'Rota Takibi',
-      channelDescription: 'Rota takibi sırasında gösterilen bildirim',
+      'Route Tracking',
+      channelDescription: 'Notification shown during route tracking',
       importance: Importance.low,
       priority: Priority.low,
       icon: '@mipmap/ic_launcher',
@@ -139,7 +139,7 @@ class NotificationService {
 
     final notificationDetails = NotificationDetails(android: androidDetails);
 
-    await _flutterLocalNotificationsPlugin.show(_notificationId, 'Rota Kaydediliyor', 'Rota aktif', notificationDetails);
+    await _flutterLocalNotificationsPlugin.show(_notificationId, 'Recording Route', 'Route active', notificationDetails);
   }
 
   /// Konum servisi kapatıldı bildirimi göster
@@ -151,8 +151,8 @@ class NotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'location_warning',
-      'Konum Uyarıları',
-      channelDescription: 'Konum servisi kapatıldığında gösterilen uyarı bildirimi',
+      'Location Warnings',
+      channelDescription: 'Warning notification shown when location service is disabled',
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
@@ -165,7 +165,7 @@ class NotificationService {
 
     const notificationDetails = NotificationDetails(android: androidDetails);
 
-    await _flutterLocalNotificationsPlugin.show(1002, '⚠️ Konum Servisi Kapatıldı', 'Rota takibi durdu! Konumu açmak için dokunun.', notificationDetails);
+    await _flutterLocalNotificationsPlugin.show(1002, '⚠️ Location Service Disabled', 'Route tracking stopped! Tap to enable location.', notificationDetails);
     debugPrint('📢 Konum kapatıldı bildirimi gösterildi');
   }
 

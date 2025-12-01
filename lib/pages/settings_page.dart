@@ -145,11 +145,11 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () async {
               await authVM.signOut();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Çıkış yapıldı'), backgroundColor: AppColors.green));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppStrings.signedOut), backgroundColor: AppColors.green));
               }
             },
             icon: const Icon(Icons.logout),
-            label: const Text('Çıkış Yap'),
+            label: Text(AppStrings.signOut),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.red,
               side: const BorderSide(color: AppColors.red),

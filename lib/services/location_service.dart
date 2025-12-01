@@ -142,13 +142,7 @@ class LocationService {
           distanceFilter: distanceFilter > 0 ? distanceFilter : 10, // Minimum 10m distance filter
           forceLocationManager: false,
           intervalDuration: const Duration(milliseconds: 1000), // Update every 1000ms (1 second)
-          foregroundNotificationConfig: const ForegroundNotificationConfig(
-            notificationText: "Rota takibi devam ediyor",
-            notificationTitle: "World Fog",
-            enableWakeLock: true, // Wake lock aktif - uygulamanın arka planda çalışmasını sağlar
-            notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
-            setOngoing: true, // Bildirim kapatılamaz
-          ),
+          // Foreground notification devre dışı - NotificationService kullanılıyor
         );
       } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
         // automotiveNavigation provides most frequent updates for real-time tracking

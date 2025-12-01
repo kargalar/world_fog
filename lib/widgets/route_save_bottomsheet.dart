@@ -350,7 +350,7 @@ class _RouteSaveBottomSheetState extends State<RouteSaveBottomSheet> {
             Row(
               children: [
                 // Delete button
-                IconButton(onPressed: _confirmDelete, icon: const Icon(Icons.delete_outline), color: AppColors.red, tooltip: 'Rotayı Sil'),
+                IconButton(onPressed: _confirmDelete, icon: const Icon(Icons.delete_outline), color: AppColors.red, tooltip: AppStrings.deleteRouteTooltip),
                 const Spacer(),
                 // Cancel button
                 TextButton(

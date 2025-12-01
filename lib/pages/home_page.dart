@@ -64,7 +64,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// Konum servisi durumunu kontrol et
   Future<void> _checkLocationServiceStatus() async {
     final locationVM = context.read<LocationViewModel>();
+    final wasDisabled = !locationVM.serviceStatus.isEnabled;
     await locationVM.checkLocationServiceStatus();
+
+    // Konum servisi yeni açıldıysa stream'i yeniden başlat
+    if (wasDisabled && locationVM.serviceStatus.isEnabled) {
+      await locationVM.restartLocationService();
+      debugPrint('✅ Konum servisi açıldı, stream yeniden başlatıldı');
+    }
   }
 
   /// Listen to location updates
@@ -84,6 +91,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
+        // Konum servisini yeniden başlat
+        locationVM.restartLocationService();
         debugPrint('✅ Konum servisi açıldı, uyarı kaldırıldı');
       }
 
@@ -191,7 +200,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 }
               },
               icon: const Icon(Icons.location_on),
-              label: const Text('Konumu Aç'),
+              label: Text(AppStrings.enableLocation),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.white, foregroundColor: AppColors.red, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
             ),
           ],
@@ -254,7 +263,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               await Location().requestService();
                             },
                             icon: const Icon(Icons.location_on),
-                            label: const Text('Konumu Aç'),
+                            label: Text(AppStrings.enableLocation),
                             style: ElevatedButton.styleFrom(backgroundColor: AppColors.white, foregroundColor: AppColors.red, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
                           ),
                         ],
@@ -441,17 +450,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           children: [
             Icon(Icons.warning_amber_rounded, color: AppColors.orange),
             const SizedBox(width: 8),
-            const Text('Hareket Algılandı'),
+            Text(AppStrings.motionDetected),
           ],
         ),
-        content: const Text('Rota duraklatılmış ancak yürümeye başladınız. Devam etmek ister misiniz?'),
+        content: Text(AppStrings.routePausedWalking),
         actions: [
           TextButton(
             onPressed: () {
               routeVM.clearMovementWarning();
               Navigator.of(dialogContext).pop();
             },
-            child: const Text('Kapat'),
+            child: Text(AppStrings.close),
           ),
           ElevatedButton(
             onPressed: () {
@@ -459,7 +468,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Navigator.of(dialogContext).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
-            child: const Text('Devam Et'),
+            child: Text(AppStrings.continueLabel),
           ),
         ],
       ),

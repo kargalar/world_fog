@@ -22,11 +22,19 @@ class AppStrings {
   // App initialization
   static const String startingApp = 'Starting World Fog...';
   static const String appStartFailed = 'Application could not be started: ';
+  static const String locationPermissionRequired = 'Location Permission Required';
+  static const String locationPermissionMessage = 'World Fog needs location permission to show your position on the map and save explored areas.';
+  static const String later = 'Later';
+  static const String grantPermission = 'Grant Permission';
 
   // Location
   static const String gettingLocation = 'Getting location...';
   static const String locationServiceUnavailable = 'Location service not available';
-  static const String locationDisabled = 'Konum kapalı. Açmak için tıklayın.';
+  static const String locationDisabled = 'Location disabled. Tap to enable.';
+  static const String enableLocation = 'Enable Location';
+  static const String motionDetected = 'Motion Detected';
+  static const String routePausedWalking = 'Route is paused but you started walking. Do you want to continue?';
+  static const String continueLabel = 'Continue';
 
   // Routes
   static const String activeRoute = 'Active Route';
@@ -57,6 +65,7 @@ class AppStrings {
 
   // Waypoints
   static const String addWaypoint = 'Add Waypoint';
+  static const String addWaypointTitle = 'Add Waypoint';
   static const String waypointType = 'Waypoint Type';
   static const String scenery = 'Scenery';
   static const String fountain = 'Fountain';
@@ -117,6 +126,9 @@ class AppStrings {
   static const String profileAndRouteHistory = 'Profile and Route History';
   static const String profile = 'Profile';
 
+  // Map View
+  static const String mapViewTitle = 'Map View';
+
   // Rating
   static const String rateRoute = 'Rate Route';
 
@@ -143,4 +155,27 @@ class AppStrings {
   static const String confirmDeleteRouteMessage = 'Are you sure you want to delete this route? This action cannot be undone.';
   static const String deleteTurkish = 'Delete';
   static const String untitled = 'Untitled';
+
+  // Route Name Dialog
+  static const String yourLocation = 'Your Location';
+  static const String startPoint = 'Start';
+  static const String deleteRouteTooltip = 'Delete Route';
+  static const String descriptionOptional = 'Description (Optional)';
+  static const String addNoteHint = 'Add a note about this place...';
+  static const String avgSpeed = 'Avg Speed';
+  static const String pointCount = 'Point Count';
+  static const String routeTracking = 'Route Tracking';
+  static const String routeTrackingDescription = 'Route tracking is in progress';
+  static const String routeRecording = 'Recording Route';
+  static const String routeActive = 'Route active';
+  static const String locationWarnings = 'Location Warnings';
+  static const String locationWarningsDescription = 'Warning notification shown when location service is disabled';
+  static const String locationServiceDisabled = 'Location Service Disabled';
+  static const String routeStoppedTapToEnable = 'Route tracking stopped! Tap to enable location.';
+  static const String signOut = 'Sign Out';
+  static const String signedOut = 'Signed out';
+
+  // Duration format
+  static const String hoursShort = 'h';
+  static const String minutesShort = 'm';
 }

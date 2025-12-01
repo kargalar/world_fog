@@ -31,7 +31,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
   void initState() {
     super.initState();
     // Varsayılan isim önerisi
-    _nameController.text = 'Rota ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}';
+    _nameController.text = 'Route ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}';
     // Otomatik odaklan
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -58,9 +58,9 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
     int hours = duration.inHours;
     int minutes = duration.inMinutes % 60;
     if (hours > 0) {
-      return '${hours}s ${minutes}dk';
+      return '${hours}h ${minutes}m';
     } else {
-      return '${minutes}dk';
+      return '${minutes}m';
     }
   }
 
@@ -117,7 +117,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                   Icon(Icons.route, color: Theme.of(context).colorScheme.primary, size: 28),
                   const SizedBox(width: 12),
                   Text(
-                    'Rotayı Kaydet',
+                    AppStrings.saveRoute,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ],
@@ -132,23 +132,23 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Rota Detayları',
+                      AppStrings.routeDetails,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
                     ),
                     const SizedBox(height: 12),
                     _buildDetailRow(Icons.straighten, 'Mesafe', _formatDistance(widget.distance)),
                     const SizedBox(height: 8),
-                    _buildDetailRow(Icons.access_time, 'Süre', _formatDuration(widget.duration)),
+                    _buildDetailRow(Icons.access_time, AppStrings.duration, _formatDuration(widget.duration)),
                     const SizedBox(height: 8),
-                    _buildDetailRow(Icons.speed, 'Ort. Hız', '${widget.averageSpeed.toStringAsFixed(1)} km/h'),
+                    _buildDetailRow(Icons.speed, AppStrings.avgSpeed, '${widget.averageSpeed.toStringAsFixed(1)} km/h'),
                     const SizedBox(height: 8),
-                    _buildDetailRow(Icons.location_on, 'Nokta Sayısı', '${widget.pointsCount}'),
+                    _buildDetailRow(Icons.location_on, AppStrings.pointCount, '${widget.pointsCount}'),
                     if (widget.totalAscent > 0 || widget.totalDescent > 0) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Expanded(child: _buildDetailRow(Icons.trending_up, 'Çıkış', '${widget.totalAscent.toStringAsFixed(0)}m')),
-                          Expanded(child: _buildDetailRow(Icons.trending_down, 'İniş', '${widget.totalDescent.toStringAsFixed(0)}m')),
+                          Expanded(child: _buildDetailRow(Icons.trending_up, AppStrings.ascent, '${widget.totalAscent.toStringAsFixed(0)}m')),
+                          Expanded(child: _buildDetailRow(Icons.trending_down, AppStrings.descent, '${widget.totalDescent.toStringAsFixed(0)}m')),
                         ],
                       ),
                     ],
@@ -163,7 +163,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                 focusNode: _focusNode,
                 decoration: InputDecoration(
                   labelText: AppStrings.routeName,
-                  hintText: 'Rotanız için bir isim girin',
+                  hintText: AppStrings.enterRouteNameHint,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.edit),
                   filled: true,
@@ -186,7 +186,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                       children: [
                         const Icon(Icons.cloud, size: 20),
                         const SizedBox(width: 8),
-                        Text('Hava Durumu', style: Theme.of(context).textTheme.titleSmall),
+                        Text(AppStrings.weather, style: Theme.of(context).textTheme.titleSmall),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -204,16 +204,16 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                               const SizedBox(width: 4),
                               Text(
                                 condition == WeatherCondition.sunny
-                                    ? 'Güneşli'
+                                    ? AppStrings.sunny
                                     : condition == WeatherCondition.cloudy
-                                    ? 'Bulutlu'
+                                    ? AppStrings.cloudy
                                     : condition == WeatherCondition.rainy
-                                    ? 'Yağmurlu'
+                                    ? AppStrings.rainy
                                     : condition == WeatherCondition.snowy
-                                    ? 'Karlı'
+                                    ? AppStrings.snowy
                                     : condition == WeatherCondition.windy
-                                    ? 'Rüzgarlı'
-                                    : 'Sisli',
+                                    ? AppStrings.windy
+                                    : AppStrings.foggy,
                                 style: TextStyle(fontSize: 12, color: isSelected ? AppColors.white : null),
                               ),
                             ],
@@ -235,7 +235,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                           controller: _temperatureController,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'Sıcaklık',
+                            labelText: AppStrings.temperature,
                             suffixText: '°C',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             isDense: true,
@@ -262,7 +262,7 @@ class _RouteNameDialogState extends State<RouteNameDialog> {
                       children: [
                         const Icon(Icons.star, size: 20, color: AppColors.amber),
                         const SizedBox(width: 8),
-                        Text('Rotayı Puanla', style: Theme.of(context).textTheme.titleSmall),
+                        Text(AppStrings.rateRoute, style: Theme.of(context).textTheme.titleSmall),
                       ],
                     ),
                     const SizedBox(height: 12),
