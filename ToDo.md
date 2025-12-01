@@ -7,5 +7,8 @@ google login. ve tüm verilerin database de tutulması.
 rota keşfetme kısmı. diğerlerini rotasının takip edebilme. rotadan çıkınca uyar.
 diğerlerinin rotasının takip edebilme. o rotayı takip edenlerin listesi ve onların yürüş bilgileri.
 
-
 yükseklik hala gelmiyor.
+
+import export
+
+app name and package name
