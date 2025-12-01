@@ -1,4 +1,4 @@
-package com.example.world_fog
+package app.trodden
 
 import android.app.Service
 import android.content.Intent

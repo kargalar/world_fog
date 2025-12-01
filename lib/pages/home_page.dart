@@ -15,7 +15,7 @@ import '../widgets/main_map_widget.dart';
 import '../utils/app_colors.dart';
 import '../widgets/route_control_panel.dart';
 import '../widgets/route_stats_card.dart';
-import '../widgets/world_fog_app.dart';
+import '../widgets/trodden_app.dart';
 import '../widgets/route_save_bottomsheet.dart';
 import '../widgets/waypoint_dialog.dart';
 import '../services/camera_service.dart';

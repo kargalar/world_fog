@@ -12,8 +12,8 @@ import '../utils/app_theme.dart';
 import '../utils/app_colors.dart';
 
 /// Main application widget
-class WorldFogApp extends StatelessWidget {
-  const WorldFogApp({super.key});
+class TroddenApp extends StatelessWidget {
+  const TroddenApp({super.key});
 
   @override
   Widget build(BuildContext context) {
