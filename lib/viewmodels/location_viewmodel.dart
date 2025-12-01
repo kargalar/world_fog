@@ -136,6 +136,11 @@ class LocationViewModel extends ChangeNotifier {
     }
   }
 
+  /// Arka plan konum iznini iste
+  Future<bool> requestBackgroundLocationPermission() async {
+    return await _locationService.requestBackgroundLocationPermission();
+  }
+
   /// Konum takibini başlat
   Future<bool> startLocationTracking({LocationAccuracy accuracy = LocationAccuracy.bestForNavigation, int distanceFilter = 0}) async {
     try {
@@ -149,6 +154,9 @@ class LocationViewModel extends ChangeNotifier {
           return false;
         }
       }
+
+      // Arka plan izni iste
+      await requestBackgroundLocationPermission();
 
       final success = await _locationService.startLocationTracking(accuracy: accuracy, distanceFilter: distanceFilter);
 

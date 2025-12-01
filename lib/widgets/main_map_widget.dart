@@ -1,13 +1,13 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import '../models/route_model.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
 import '../pages/profile_page.dart';
-import '../pages/settings_page.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_strings.dart';
 import 'waypoint_dialog.dart';
@@ -125,52 +125,84 @@ class _MainMapWidgetState extends State<MainMapWidget> {
       builder: (context, locationVM, mapVM, routeVM, child) {
         final currentLocation = locationVM.currentLocation;
 
-        if (currentLocation == null) {
-          return const Center(
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(), SizedBox(height: 16), Text(AppStrings.gettingLocation)]),
-          );
-        }
+        // Konum yoksa son bilinen konumu veya varsayılan konumu kullan
+        final mapCenter = currentLocation?.position ?? mapVM.lastKnownLocation;
+        final hasCurrentLocation = currentLocation != null;
 
-        return GoogleMap(
-          initialCameraPosition: CameraPosition(target: currentLocation.position, zoom: mapVM.zoom),
-          onMapCreated: (GoogleMapController controller) {
-            mapVM.setMapController(controller);
-          },
-          mapType: mapVM.mapType,
-          myLocationEnabled: false, // Kendi markerımızı kullanacağız
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          compassEnabled: true,
-          minMaxZoomPreference: const MinMaxZoomPreference(5.0, 18.0),
-          onCameraMove: (CameraPosition position) {
-            // Kullanıcı haritayı manuel hareket ettirirse otomatik takibi kapat
-            if (mapVM.isFollowingLocation) {
-              mapVM.setLocationFollowing(false);
-            }
-          },
-          markers: _buildMarkers(context, currentLocation.position, routeVM, mapVM),
-          polylines: _buildPolylines(routeVM, mapVM),
-          polygons: _buildGridPolygons(mapVM),
+        return Stack(
+          children: [
+            GoogleMap(
+              initialCameraPosition: CameraPosition(target: mapCenter, zoom: mapVM.zoom),
+              onMapCreated: (GoogleMapController controller) {
+                mapVM.setMapController(controller);
+              },
+              mapType: mapVM.mapType,
+              myLocationEnabled: false, // Kendi markerımızı kullanacağız
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
+              compassEnabled: true,
+              minMaxZoomPreference: const MinMaxZoomPreference(5.0, 18.0),
+              onCameraMove: (CameraPosition position) {
+                // Kullanıcı haritayı manuel hareket ettirirse otomatik takibi kapat
+                if (mapVM.isFollowingLocation) {
+                  mapVM.setLocationFollowing(false);
+                }
+              },
+              markers: _buildMarkers(context, currentLocation?.position, routeVM, mapVM),
+              polylines: _buildPolylines(routeVM, mapVM),
+              polygons: _buildGridPolygons(mapVM),
+            ),
+            // Konum alınıyorsa üstte gösterge göster
+            if (!hasCurrentLocation && !locationVM.isLocationAvailable)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 60,
+                left: 16,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () async {
+                    // Konum servislerini açmak için dialoğu çağır
+                    await Location().requestService();
+                  },
+                  child: Card(
+                    color: AppColors.orange.withValues(alpha: 0.9),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_off, color: AppColors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(AppStrings.locationDisabled, style: const TextStyle(color: AppColors.white, fontSize: 14)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );
   }
 
   /// Marker'ları oluştur
-  Set<Marker> _buildMarkers(BuildContext context, LatLng currentPosition, RouteViewModel routeVM, MapViewModel mapVM) {
+  Set<Marker> _buildMarkers(BuildContext context, LatLng? currentPosition, RouteViewModel routeVM, MapViewModel mapVM) {
     final markers = <Marker>{};
 
-    // Mevcut konum markeri
-    markers.add(
-      Marker(
-        markerId: const MarkerId('current_location'),
-        position: currentPosition,
-        icon: MarkerIcons.currentLocation ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'Konumunuz'),
-        anchor: const Offset(0.5, 0.5),
-      ),
-    );
+    // Mevcut konum markeri (sadece konum varsa göster)
+    if (currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: currentPosition,
+          icon: MarkerIcons.currentLocation ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Konumunuz'),
+          anchor: const Offset(0.5, 0.5),
+        ),
+      );
+    }
 
     // Rota başlangıç markeri
     if (routeVM.isTracking && routeVM.currentRoutePoints.isNotEmpty) {

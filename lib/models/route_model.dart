@@ -197,11 +197,11 @@ class RouteModel {
   }
 
   String get formattedAscent {
-    return '↗ ${totalAscent.toStringAsFixed(0)}m';
+    return '${totalAscent.toStringAsFixed(0)}m';
   }
 
   String get formattedDescent {
-    return '↘ ${totalDescent.toStringAsFixed(0)}m';
+    return '${totalDescent.toStringAsFixed(0)}m';
   }
 
   Map<String, dynamic> toJson() {

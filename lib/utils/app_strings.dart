@@ -26,6 +26,7 @@ class AppStrings {
   // Location
   static const String gettingLocation = 'Getting location...';
   static const String locationServiceUnavailable = 'Location service not available';
+  static const String locationDisabled = 'Konum kapalı. Açmak için tıklayın.';
 
   // Routes
   static const String activeRoute = 'Active Route';

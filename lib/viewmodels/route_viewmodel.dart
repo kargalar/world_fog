@@ -6,6 +6,7 @@ import '../models/route_model.dart';
 import '../models/location_model.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
+import 'package:geolocator/geolocator.dart';
 
 /// Rota işlemlerini yöneten ViewModel
 class RouteViewModel extends ChangeNotifier {
@@ -38,6 +39,11 @@ class RouteViewModel extends ChangeNotifier {
   final List<LocationModel> _locationBuffer = [];
   bool _isBufferingEnabled = false;
 
+  // Pause halinde hareket algılama
+  LatLng? _lastPausedPosition;
+  bool _movementDetectedWhilePaused = false;
+  static const double _movementThreshold = 15.0; // 15 metre hareket eşiği
+
   // Timers
   Timer? _durationTimer;
   Timer? _breakTimer;
@@ -55,6 +61,7 @@ class RouteViewModel extends ChangeNotifier {
   DateTime? get routeStartTime => _routeStartTime;
   Duration get totalPausedTime => _totalPausedTime;
   Duration get currentBreakDuration => _currentBreakDuration;
+  bool get movementDetectedWhilePaused => _movementDetectedWhilePaused;
 
   // Getters - Route data
   List<RoutePoint> get currentRoutePoints => List.unmodifiable(_currentRoutePoints);
@@ -138,6 +145,12 @@ class RouteViewModel extends ChangeNotifier {
     _isPaused = true;
     _pauseStartTime = DateTime.now();
     _currentBreakDuration = Duration.zero;
+    _movementDetectedWhilePaused = false;
+
+    // Son konumu kaydet (pause halinde hareket algılama için)
+    if (_currentRoutePoints.isNotEmpty) {
+      _lastPausedPosition = _currentRoutePoints.last.position;
+    }
 
     // Mola sayacını başlat
     _startBreakTimer();
@@ -153,6 +166,8 @@ class RouteViewModel extends ChangeNotifier {
     if (!_isTracking || !_isPaused) return;
 
     _isPaused = false;
+    _movementDetectedWhilePaused = false;
+    _lastPausedPosition = null;
 
     // Toplam mola süresini güncelle
     if (_pauseStartTime != null) {
@@ -182,6 +197,9 @@ class RouteViewModel extends ChangeNotifier {
 
     // Bildirim servisini durdur
     _notificationService.stopRouteNotification();
+
+    // Aktif rota state'ini temizle
+    await clearActiveRouteState();
 
     // Son mola süresini hesapla
     if (_isPaused && _pauseStartTime != null) {
@@ -225,6 +243,9 @@ class RouteViewModel extends ChangeNotifier {
 
     // Bildirim servisini durdur
     _notificationService.stopRouteNotification();
+
+    // Aktif rota state'ini temizle
+    await clearActiveRouteState();
 
     // Son mola süresini hesapla
     if (_isPaused && _pauseStartTime != null) {
@@ -291,7 +312,7 @@ class RouteViewModel extends ChangeNotifier {
 
   /// Yeni konum noktası ekle
   void addLocationPoint(LocationModel location) {
-    if (!_isTracking || _isPaused) return;
+    if (!_isTracking) return;
 
     // Arkaplan modundayken tampona ekle
     if (_isBufferingEnabled) {
@@ -300,7 +321,59 @@ class RouteViewModel extends ChangeNotifier {
       return;
     }
 
+    // Pause halinde hareket kontrolü ve rota çizimi (istatistikler hariç)
+    if (_isPaused) {
+      _checkMovementWhilePaused(location.position);
+      _addLocationPointWhilePaused(location);
+      return;
+    }
+
     _addLocationPointInternal(location);
+  }
+
+  /// Pause halinde hareket kontrolü
+  void _checkMovementWhilePaused(LatLng currentPosition) {
+    if (_lastPausedPosition == null) {
+      _lastPausedPosition = currentPosition;
+      return;
+    }
+
+    final distance = Geolocator.distanceBetween(_lastPausedPosition!.latitude, _lastPausedPosition!.longitude, currentPosition.latitude, currentPosition.longitude);
+
+    if (distance > _movementThreshold && !_movementDetectedWhilePaused) {
+      _movementDetectedWhilePaused = true;
+      debugPrint('⚠️ Pause halinde hareket algılandı: ${distance.toStringAsFixed(1)}m');
+      notifyListeners();
+    }
+  }
+
+  /// Pause halinde konum noktası ekle (istatistikler hesaplanmaz, sadece rota çizilir)
+  void _addLocationPointWhilePaused(LocationModel location) {
+    LatLng? lastPointPosition;
+    double currentAltitude = location.altitude ?? 0.0;
+
+    if (_currentRoutePoints.isNotEmpty) {
+      lastPointPosition = _currentRoutePoints.last.position;
+    }
+
+    // Yeni noktayı ekle (mesafe ve yükseklik istatistikleri hesaplanmaz)
+    _currentRoutePoints.add(RoutePoint(position: location.position, altitude: currentAltitude, timestamp: location.timestamp));
+
+    // Rotanın üzerindeki gridleri keşfet
+    if (lastPointPosition != null && _onRoutePointsAdded != null) {
+      _onRoutePointsAdded!(lastPointPosition, location.position);
+    }
+
+    notifyListeners();
+  }
+
+  /// Hareket uyarısını temizle
+  void clearMovementWarning() {
+    _movementDetectedWhilePaused = false;
+    if (_currentRoutePoints.isNotEmpty) {
+      _lastPausedPosition = _currentRoutePoints.last.position;
+    }
+    notifyListeners();
   }
 
   /// İç konum noktası ekleme metodu
@@ -310,23 +383,32 @@ class RouteViewModel extends ChangeNotifier {
     LatLng? lastPointPosition;
     double currentAltitude = location.altitude ?? 0.0;
 
-    // Mesafe hesapla
+    // İlk nokta için lastAltitude'u ayarla
+    if (_currentRoutePoints.isEmpty) {
+      _lastAltitude = currentAltitude;
+    }
+
+    // Mesafe ve yükseklik hesapla
     if (_currentRoutePoints.isNotEmpty) {
       final lastPoint = _currentRoutePoints.last;
       lastPointPosition = lastPoint.position;
       final distance = _calculateDistance(lastPoint.position, location.position);
       _currentRouteDistance += distance;
 
-      // Yükseklik değişimini hesapla
+      // Yükseklik değişimini hesapla (küçük gürültüleri filtrele)
       final altitudeDiff = currentAltitude - _lastAltitude;
-      if (altitudeDiff > 0) {
-        _totalAscent += altitudeDiff;
-      } else {
-        _totalDescent += altitudeDiff.abs();
+      // Sadece 1 metreden fazla yükseklik değişikliklerini say (GPS gürültüsünü filtrele)
+      if (altitudeDiff.abs() > 1.0) {
+        if (altitudeDiff > 0) {
+          _totalAscent += altitudeDiff;
+          debugPrint('📈 Tırmanış: +${altitudeDiff.toStringAsFixed(1)}m (Toplam: ${_totalAscent.toStringAsFixed(1)}m)');
+        } else {
+          _totalDescent += altitudeDiff.abs();
+          debugPrint('📉 İniş: -${altitudeDiff.abs().toStringAsFixed(1)}m (Toplam: ${_totalDescent.toStringAsFixed(1)}m)');
+        }
+        _lastAltitude = currentAltitude;
       }
     }
-
-    _lastAltitude = currentAltitude;
 
     // Yeni noktayı ekle
     _currentRoutePoints.add(RoutePoint(position: location.position, altitude: currentAltitude, timestamp: location.timestamp));
@@ -460,6 +542,8 @@ class RouteViewModel extends ChangeNotifier {
     _currentWaypoints.clear();
     _locationBuffer.clear();
     _isBufferingEnabled = false;
+    _movementDetectedWhilePaused = false;
+    _lastPausedPosition = null;
     _durationTimer?.cancel();
     _breakTimer?.cancel();
   }
@@ -474,6 +558,9 @@ class RouteViewModel extends ChangeNotifier {
 
     // Bildirim servisini durdur
     _notificationService.stopRouteNotification();
+
+    // Aktif rota state'ini temizle
+    clearActiveRouteState();
 
     // State'i sıfırla
     _resetRouteState();
@@ -499,6 +586,95 @@ class RouteViewModel extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Aktif rota state'ini kaydet (uygulama kapanırken)
+  Future<void> saveActiveRouteState() async {
+    if (!_isTracking) {
+      await _storageService.clearActiveRouteState();
+      return;
+    }
+
+    try {
+      final state = ActiveRouteState(
+        isTracking: _isTracking,
+        isPaused: _isPaused,
+        routeStartTime: _routeStartTime,
+        pauseStartTime: _pauseStartTime,
+        totalPausedTime: _totalPausedTime,
+        routePoints: List.from(_currentRoutePoints),
+        exploredAreas: List.from(_currentRouteExploredAreas),
+        waypoints: List.from(_currentWaypoints),
+        totalDistance: _currentRouteDistance,
+        totalAscent: _totalAscent,
+        totalDescent: _totalDescent,
+        lastAltitude: _lastAltitude,
+      );
+      await _storageService.saveActiveRouteState(state);
+      debugPrint('💾 Aktif rota state kaydedildi');
+    } catch (e) {
+      debugPrint('❌ Aktif rota state kaydedilemedi: $e');
+    }
+  }
+
+  /// Aktif rota state'ini geri yükle (uygulama açılırken)
+  Future<bool> restoreActiveRouteState() async {
+    try {
+      final state = await _storageService.loadActiveRouteState();
+      if (state == null || !state.isTracking) {
+        return false;
+      }
+
+      _isTracking = state.isTracking;
+      _isPaused = state.isPaused;
+      _routeStartTime = state.routeStartTime;
+      _pauseStartTime = state.pauseStartTime;
+      _totalPausedTime = state.totalPausedTime;
+      _currentRoutePoints.addAll(state.routePoints);
+      _currentRouteExploredAreas.addAll(state.exploredAreas);
+      _currentWaypoints.addAll(state.waypoints);
+      _currentRouteDistance = state.totalDistance;
+      _totalAscent = state.totalAscent;
+      _totalDescent = state.totalDescent;
+      _lastAltitude = state.lastAltitude;
+
+      // Süre hesapla
+      if (_routeStartTime != null) {
+        final now = DateTime.now();
+        final totalElapsed = now.difference(_routeStartTime!);
+
+        // Eğer pause halindeyse, pause süresini hesapla
+        if (_isPaused && _pauseStartTime != null) {
+          final pauseDuration = now.difference(_pauseStartTime!);
+          _currentBreakDuration = pauseDuration;
+        }
+
+        _currentRouteDuration = totalElapsed - _totalPausedTime;
+      }
+
+      // Timer'ları başlat
+      _startDurationTimer();
+      if (_isPaused) {
+        _startBreakTimer();
+      }
+
+      // Bildirimi başlat
+      if (!_isPaused) {
+        _notificationService.startRouteNotification();
+      }
+
+      debugPrint('✅ Aktif rota state geri yüklendi: ${_currentRoutePoints.length} nokta');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('❌ Aktif rota state geri yüklenemedi: $e');
+      return false;
+    }
+  }
+
+  /// Aktif rota state'ini temizle
+  Future<void> clearActiveRouteState() async {
+    await _storageService.clearActiveRouteState();
   }
 
   @override

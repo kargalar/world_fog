@@ -22,6 +22,12 @@ class MapViewModel extends ChangeNotifier {
   // Grid boyutu: 0.125km² için yaklaşık 0.0032 derece (354m / 111320m)
   static const double _gridSizeDegrees = 0.0032;
 
+  // Varsayılan konum (Türkiye merkezi - Ankara)
+  static const LatLng _defaultLocation = LatLng(39.9334, 32.8597);
+
+  // Son bilinen konum
+  LatLng? _lastKnownLocation;
+
   // Getters
   Completer<GoogleMapController> get mapControllerCompleter => _mapControllerCompleter;
   MapStateModel get mapState => _mapState;
@@ -30,6 +36,7 @@ class MapViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   MapType get mapType => _mapType;
+  bool get isSatelliteView => _mapType == MapType.satellite || _mapType == MapType.hybrid;
 
   // Map state getters
   LatLng? get center => _mapState.center;
@@ -42,6 +49,11 @@ class MapViewModel extends ChangeNotifier {
   Set<String> get exploredGrids => _exploredAreas.exploredGrids;
   int get exploredAreasCount => _exploredAreas.exploredGrids.length;
   DateTime get lastExplorationUpdate => _exploredAreas.lastUpdated;
+
+  // Son bilinen konum veya varsayılan konum
+  LatLng get lastKnownLocation => _lastKnownLocation ?? _defaultLocation;
+  bool get hasLastKnownLocation => _lastKnownLocation != null;
+  static LatLng get defaultLocation => _defaultLocation;
 
   MapViewModel() {
     _initializeMap();
@@ -60,6 +72,7 @@ class MapViewModel extends ChangeNotifier {
     try {
       await _loadSettings();
       await _loadExploredAreas();
+      await _loadLastKnownLocation();
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Harita başlatılamadı: $e';
@@ -68,10 +81,37 @@ class MapViewModel extends ChangeNotifier {
     }
   }
 
+  /// Son bilinen konumu yükle
+  Future<void> _loadLastKnownLocation() async {
+    try {
+      _lastKnownLocation = await _storageService.loadLastKnownLocation();
+      if (_lastKnownLocation != null) {
+        _mapState = _mapState.copyWith(center: _lastKnownLocation);
+        debugPrint('📍 Son bilinen konum yüklendi: ${_lastKnownLocation!.latitude}, ${_lastKnownLocation!.longitude}');
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Son bilinen konum yüklenemedi: $e');
+    }
+  }
+
+  /// Son bilinen konumu kaydet
+  Future<void> saveLastKnownLocation(LatLng location) async {
+    try {
+      _lastKnownLocation = location;
+      await _storageService.saveLastKnownLocation(location);
+    } catch (e) {
+      debugPrint('Son bilinen konum kaydedilemedi: $e');
+    }
+  }
+
   /// Ayarları yükle
   Future<void> _loadSettings() async {
     try {
       _settings = await _storageService.loadSettings();
+      // Kaydedilmiş harita tipini ve geçmiş rota görünürlüğünü uygula
+      _mapType = _settings.isSatelliteView ? MapType.satellite : MapType.normal;
+      _mapState = _mapState.copyWith(showPastRoutes: _settings.showPastRoutes);
       notifyListeners();
     } catch (e) {
       debugPrint('Ayarlar yüklenemedi: $e');
@@ -152,21 +192,37 @@ class MapViewModel extends ChangeNotifier {
   }
 
   /// Geçmiş rotaları göster/gizle
-  void togglePastRoutes() {
+  Future<void> togglePastRoutes() async {
     _mapState = _mapState.copyWith(showPastRoutes: !_mapState.showPastRoutes);
+    // Ayarı kaydet
+    final newSettings = _settings.copyWith(showPastRoutes: _mapState.showPastRoutes);
+    await updateSettings(newSettings);
     notifyListeners();
   }
 
   /// Geçmiş rotaları göstermeyi ayarla
-  void setPastRoutesVisibility(bool show) {
+  Future<void> setPastRoutesVisibility(bool show) async {
     _mapState = _mapState.copyWith(showPastRoutes: show);
+    // Ayarı kaydet
+    final newSettings = _settings.copyWith(showPastRoutes: show);
+    await updateSettings(newSettings);
     notifyListeners();
   }
 
   /// Harita tipini değiştir
-  void setMapType(MapType type) {
+  Future<void> setMapType(MapType type) async {
     _mapType = type;
+    // Ayarı kaydet
+    final isSatellite = type == MapType.satellite || type == MapType.hybrid;
+    final newSettings = _settings.copyWith(isSatelliteView: isSatellite);
+    await updateSettings(newSettings);
     notifyListeners();
+  }
+
+  /// Harita tipini değiştir (uydu/normal arası)
+  Future<void> toggleSatelliteView() async {
+    final newType = _mapType == MapType.normal ? MapType.satellite : MapType.normal;
+    await setMapType(newType);
   }
 
   /// Konuma göre haritayı güncelle

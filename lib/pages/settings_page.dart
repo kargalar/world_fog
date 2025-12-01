@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../utils/app_strings.dart';
 import '../utils/app_colors.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(double)? onRadiusChanged;
@@ -47,6 +49,31 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Hesap Bölümü - Google Login
+          Consumer<AuthViewModel>(
+            builder: (context, authVM, child) {
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.account_circle, color: Theme.of(context).primaryColor),
+                          const SizedBox(width: 8),
+                          Text('Hesap', style: Theme.of(context).textTheme.titleLarge),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (authVM.isLoading) const Center(child: CircularProgressIndicator()) else if (authVM.isSignedIn) _buildSignedInView(authVM) else _buildSignInButton(authVM),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           // Map Settings - Clear Explored Areas
           Card(
             child: Padding(
@@ -78,6 +105,58 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSignInButton(AuthViewModel authVM) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () async {
+          final success = await authVM.signInWithGoogle();
+          if (!success && mounted && authVM.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(authVM.errorMessage!), backgroundColor: AppColors.red));
+            authVM.clearError();
+          }
+        },
+        icon: Image.network('https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg', height: 24, width: 24, errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata)),
+        label: const Text('Google ile Giriş Yap'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          side: BorderSide(color: Theme.of(context).primaryColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignedInView(AuthViewModel authVM) {
+    final user = authVM.currentUser!;
+    return Column(
+      children: [
+        ListTile(
+          leading: user.photoUrl != null ? CircleAvatar(backgroundImage: NetworkImage(user.photoUrl!)) : const CircleAvatar(child: Icon(Icons.person)),
+          title: Text(user.displayName ?? 'Kullanıcı'),
+          subtitle: Text(user.email ?? ''),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              await authVM.signOut();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Çıkış yapıldı'), backgroundColor: AppColors.green));
+              }
+            },
+            icon: const Icon(Icons.logout),
+            label: const Text('Çıkış Yap'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.red,
+              side: const BorderSide(color: AppColors.red),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

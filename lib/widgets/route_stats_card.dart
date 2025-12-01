@@ -5,7 +5,7 @@ import '../utils/app_colors.dart';
 class RouteStatsCard extends StatelessWidget {
   final double currentRouteDistance;
   final Duration currentRouteDuration;
-  final Duration currentBreakDuration;
+  final Duration totalBreakDuration; // Toplam mola süresi
   final bool isPaused;
   final double averageSpeed;
   final double totalAscent;
@@ -13,7 +13,7 @@ class RouteStatsCard extends StatelessWidget {
   final int pointsCount;
   final int waypointsCount;
 
-  const RouteStatsCard({super.key, required this.currentRouteDistance, required this.currentRouteDuration, required this.currentBreakDuration, required this.isPaused, this.averageSpeed = 0.0, this.totalAscent = 0.0, this.totalDescent = 0.0, this.pointsCount = 0, this.waypointsCount = 0});
+  const RouteStatsCard({super.key, required this.currentRouteDistance, required this.currentRouteDuration, required this.totalBreakDuration, required this.isPaused, this.averageSpeed = 0.0, this.totalAscent = 0.0, this.totalDescent = 0.0, this.pointsCount = 0, this.waypointsCount = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +24,13 @@ class RouteStatsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                if (isPaused) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: AppColors.orange.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
-                    child: Text(
-                      AppStrings.paused,
-                      style: const TextStyle(fontSize: 12, color: AppColors.orange, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ],
-            ),
             // İlk satır: Mesafe, Süre, Mola
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem(AppStrings.distance, _formatDistance(currentRouteDistance), Icons.straighten, AppColors.blue),
                 _buildStatItem(AppStrings.duration, _formatDuration(currentRouteDuration), Icons.timer, AppColors.green),
-                _buildStatItem(AppStrings.breakTime, _formatDuration(currentBreakDuration), Icons.coffee, AppColors.orange),
+                _buildStatItem(AppStrings.breakTime, _formatDuration(totalBreakDuration), Icons.coffee, AppColors.orange),
               ],
             ),
             const SizedBox(height: 12),

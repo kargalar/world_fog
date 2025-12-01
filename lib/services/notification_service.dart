@@ -142,6 +142,38 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.show(_notificationId, 'Rota Kaydediliyor', 'Rota aktif', notificationDetails);
   }
 
+  /// Konum servisi kapatıldı bildirimi göster
+  Future<void> showLocationDisabledNotification() async {
+    await initialize();
+
+    final hasPermission = await requestNotificationPermission();
+    if (!hasPermission) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'location_warning',
+      'Konum Uyarıları',
+      channelDescription: 'Konum servisi kapatıldığında gösterilen uyarı bildirimi',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      ongoing: false,
+      autoCancel: true,
+      visibility: NotificationVisibility.public,
+      category: AndroidNotificationCategory.alarm,
+    );
+
+    const notificationDetails = NotificationDetails(android: androidDetails);
+
+    await _flutterLocalNotificationsPlugin.show(1002, '⚠️ Konum Servisi Kapatıldı', 'Rota takibi durdu! Konumu açmak için dokunun.', notificationDetails);
+    debugPrint('📢 Konum kapatıldı bildirimi gösterildi');
+  }
+
+  /// Konum uyarı bildirimini kapat
+  Future<void> cancelLocationWarningNotification() async {
+    await _flutterLocalNotificationsPlugin.cancel(1002);
+  }
+
   void dispose() {
     stopRouteNotification();
   }

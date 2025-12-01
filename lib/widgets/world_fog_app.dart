@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:location/location.dart';
 import '../viewmodels/location_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../viewmodels/route_viewmodel.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../models/location_model.dart';
 import '../pages/home_page.dart';
 import '../utils/app_strings.dart';
 import '../utils/app_theme.dart';
@@ -14,19 +17,15 @@ class WorldFogApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppStrings.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      themeMode: ThemeMode.light,
-      home: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => LocationViewModel()),
-          ChangeNotifierProvider(create: (_) => MapViewModel()),
-          ChangeNotifierProvider(create: (_) => RouteViewModel()),
-        ],
-        child: const AppInitializer(),
-      ),
+    // MultiProvider'ı MaterialApp'ın dışına taşıyarak tüm route'larda erişilebilir olmasını sağla
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocationViewModel()),
+        ChangeNotifierProvider(create: (_) => MapViewModel()),
+        ChangeNotifierProvider(create: (_) => RouteViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+      ],
+      child: MaterialApp(title: AppStrings.appName, debugShowCheckedModeBanner: false, theme: AppTheme.lightTheme, themeMode: ThemeMode.light, home: const AppInitializer()),
     );
   }
 }
@@ -67,9 +66,14 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
       debugPrint('📱 App resumed - processing buffered locations');
       routeVM.processBufferedLocations();
     } else if (state == AppLifecycleState.paused) {
-      // App went to background - enable buffering
-      debugPrint('📱 App paused - enabling location buffering');
+      // App went to background - enable buffering and save state
+      debugPrint('📱 App paused - enabling location buffering and saving state');
       routeVM.enableLocationBuffering();
+      routeVM.saveActiveRouteState();
+    } else if (state == AppLifecycleState.detached) {
+      // App is being terminated - save state
+      debugPrint('📱 App detached - saving active route state');
+      routeVM.saveActiveRouteState();
     }
   }
 
@@ -82,6 +86,22 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
       // Initialize location service
       await locationVM.checkLocationServiceStatus();
 
+      // Konum servisi kapalıysa veya izin yoksa açma isteği gönder
+      if (!locationVM.isLocationAvailable) {
+        // Konum servisi kapalıysa kullanıcıya sor
+        if (!locationVM.serviceStatus.isEnabled) {
+          await _showLocationServiceDisabledDialog(locationVM);
+        } else if (locationVM.serviceStatus.permissionStatus != LocationPermissionStatus.granted) {
+          // İzin yoksa izin iste
+          await locationVM.requestLocationPermission();
+
+          // Hala izin verilmediyse dialog göster
+          if (!locationVM.isLocationAvailable) {
+            await _showLocationPermissionDialog(locationVM);
+          }
+        }
+      }
+
       // If location service is available, start location tracking
       if (locationVM.isLocationAvailable) {
         await locationVM.startLocationTracking(); // Uses default distanceFilter: 0 for real-time tracking
@@ -93,14 +113,19 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
         if (locationVM.hasLocation) {
           // MapController may not be ready yet, just update state
           mapVM.updateMapCenter(locationVM.currentPosition!);
+          // Son bilinen konumu kaydet
+          await mapVM.saveLastKnownLocation(locationVM.currentPosition!);
         }
-      } else {
-        // Request location permission
-        await locationVM.requestLocationPermission();
       }
 
       // Load past routes
       await routeVM.loadPastRoutes();
+
+      // Aktif rota state'ini geri yükle (uygulama kapatılmışsa)
+      final hasActiveRoute = await routeVM.restoreActiveRouteState();
+      if (hasActiveRoute) {
+        debugPrint('📍 Aktif rota geri yüklendi');
+      }
 
       // Rota gridleri keşfetme callback'i ayarla
       // Bu sayede, rota noktaları eklenirken aradaki tüm gridler keşfedilir
@@ -132,12 +157,64 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
         // Konum her güncellendiğinde grid'i keşfet
         mapVM.exploreNewGrid(location.position);
 
-        // Aktif rota varsa, rotaya punkt ekle ve alanı keşfet
-        if (routeVM.isActive) {
+        // Son bilinen konumu kaydet (her konum güncellemesinde değil, belirli aralıklarla)
+        mapVM.saveLastKnownLocation(location.position);
+
+        // Rota takip ediliyorsa (pause dahil) konum noktası ekle
+        if (routeVM.isTracking) {
           routeVM.addLocationPoint(location);
         }
       }
     });
+  }
+
+  /// Konum servisi kapalı dialog'u
+  Future<void> _showLocationServiceDisabledDialog(LocationViewModel locationVM) async {
+    // Doğrudan konum servisini açma dialog'unu göster
+    await Location().requestService();
+    // Kullanıcı dialog'dan döndükten sonra tekrar kontrol et
+    await Future.delayed(const Duration(milliseconds: 500));
+    await locationVM.checkLocationServiceStatus();
+  }
+
+  /// Konum izni dialog'u
+  Future<void> _showLocationPermissionDialog(LocationViewModel locationVM) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.location_disabled, color: AppColors.orange),
+            const SizedBox(width: 8),
+            const Text('Konum İzni Gerekli'),
+          ],
+        ),
+        content: const Text(
+          'World Fog uygulamasının haritada konumunuzu gösterebilmesi ve '
+          'keşfettiğiniz alanları kaydedebilmesi için konum iznine ihtiyacı vardır.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Daha Sonra')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.green),
+            child: const Text('İzin Ver'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      // Kalıcı olarak reddedilmişse uygulama ayarlarına yönlendir
+      if (locationVM.serviceStatus.permissionStatus == LocationPermissionStatus.deniedForever) {
+        await locationVM.openAppSettings();
+      } else {
+        await locationVM.requestLocationPermission();
+      }
+      await Future.delayed(const Duration(seconds: 1));
+      await locationVM.checkLocationServiceStatus();
+    }
   }
 
   @override

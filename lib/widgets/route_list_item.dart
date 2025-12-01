@@ -106,13 +106,23 @@ class RouteListItem extends StatelessWidget {
                   Icon(Icons.speed, size: 16, color: AppColors.purple),
                   const SizedBox(width: 4),
                   Text(route.formattedAverageSpeed),
-                  if (route.totalAscent > 0) ...[const SizedBox(width: 16), Icon(Icons.trending_up, size: 16, color: AppColors.green), const SizedBox(width: 4), Text(route.formattedAscent)],
-                  if (route.totalDescent > 0) ...[const SizedBox(width: 16), Icon(Icons.trending_down, size: 16, color: AppColors.red), const SizedBox(width: 4), Text(route.formattedDescent)],
                   const SizedBox(width: 16),
+                  Icon(Icons.trending_up, size: 16, color: AppColors.green),
+                  const SizedBox(width: 4),
+                  Text(route.formattedAscent),
+                  const SizedBox(width: 8),
+                  Icon(Icons.trending_down, size: 16, color: AppColors.red),
+                  const SizedBox(width: 4),
+                  Text(route.formattedDescent),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
                   Icon(Icons.location_on, size: 16, color: AppColors.orange),
                   const SizedBox(width: 4),
                   Text('${route.routePoints.length}'),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 10),
                   Icon(Icons.photo_camera, size: 16, color: AppColors.deepPurple),
                   const SizedBox(width: 4),
                   Text('${route.waypoints.length}'),
@@ -124,10 +134,10 @@ class RouteListItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(icon: const Icon(Icons.edit), onPressed: onEdit, padding: const EdgeInsets.all(0)),
-
               IconButton(
                 icon: const Icon(Icons.delete, color: AppColors.red),
                 onPressed: onDelete,
+                padding: const EdgeInsets.all(0),
               ),
             ],
           ),

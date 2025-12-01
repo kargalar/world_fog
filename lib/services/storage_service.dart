@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_state_model.dart';
 import '../models/route_model.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// Veri saklama işlemlerini yöneten servis sınıfı
 class StorageService {
@@ -12,6 +13,8 @@ class StorageService {
   static const String _settingsKey = 'app_settings';
   static const String _exploredAreasKey = 'explored_areas';
   static const String _routesKey = 'saved_routes';
+  static const String _activeRouteKey = 'active_route_state';
+  static const String _lastLocationKey = 'last_known_location';
 
   /// Uygulama ayarlarını kaydet
   Future<void> saveSettings(AppSettingsModel settings) async {
@@ -201,6 +204,137 @@ class StorageService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Aktif rota state'ini kaydet
+  Future<void> saveActiveRouteState(ActiveRouteState state) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stateJson = json.encode(state.toJson());
+      await prefs.setString(_activeRouteKey, stateJson);
+    } catch (e) {
+      throw StorageException('Aktif rota state kaydedilemedi: $e');
+    }
+  }
+
+  /// Aktif rota state'ini yükle
+  Future<ActiveRouteState?> loadActiveRouteState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stateJson = prefs.getString(_activeRouteKey);
+
+      if (stateJson == null) {
+        return null;
+      }
+
+      final stateMap = json.decode(stateJson) as Map<String, dynamic>;
+      return ActiveRouteState.fromJson(stateMap);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Aktif rota state'ini temizle
+  Future<void> clearActiveRouteState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_activeRouteKey);
+    } catch (e) {
+      throw StorageException('Aktif rota state temizlenemedi: $e');
+    }
+  }
+
+  /// Son bilinen konumu kaydet
+  Future<void> saveLastKnownLocation(LatLng location) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final locationJson = json.encode({'latitude': location.latitude, 'longitude': location.longitude});
+      await prefs.setString(_lastLocationKey, locationJson);
+    } catch (e) {
+      throw StorageException('Son konum kaydedilemedi: $e');
+    }
+  }
+
+  /// Son bilinen konumu yükle
+  Future<LatLng?> loadLastKnownLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final locationJson = prefs.getString(_lastLocationKey);
+
+      if (locationJson == null) {
+        return null;
+      }
+
+      final locationMap = json.decode(locationJson) as Map<String, dynamic>;
+      return LatLng(locationMap['latitude'] as double, locationMap['longitude'] as double);
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+/// Aktif rota state modeli
+class ActiveRouteState {
+  final bool isTracking;
+  final bool isPaused;
+  final DateTime? routeStartTime;
+  final DateTime? pauseStartTime;
+  final Duration totalPausedTime;
+  final List<RoutePoint> routePoints;
+  final List<LatLng> exploredAreas;
+  final List<RouteWaypoint> waypoints;
+  final double totalDistance;
+  final double totalAscent;
+  final double totalDescent;
+  final double lastAltitude;
+
+  const ActiveRouteState({
+    required this.isTracking,
+    required this.isPaused,
+    this.routeStartTime,
+    this.pauseStartTime,
+    required this.totalPausedTime,
+    required this.routePoints,
+    required this.exploredAreas,
+    required this.waypoints,
+    required this.totalDistance,
+    required this.totalAscent,
+    required this.totalDescent,
+    required this.lastAltitude,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isTracking': isTracking,
+      'isPaused': isPaused,
+      'routeStartTime': routeStartTime?.toIso8601String(),
+      'pauseStartTime': pauseStartTime?.toIso8601String(),
+      'totalPausedTimeMs': totalPausedTime.inMilliseconds,
+      'routePoints': routePoints.map((p) => {'lat': p.position.latitude, 'lng': p.position.longitude, 'altitude': p.altitude, 'timestamp': p.timestamp.toIso8601String()}).toList(),
+      'exploredAreas': exploredAreas.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'waypoints': waypoints.map((w) => w.toJson()).toList(),
+      'totalDistance': totalDistance,
+      'totalAscent': totalAscent,
+      'totalDescent': totalDescent,
+      'lastAltitude': lastAltitude,
+    };
+  }
+
+  factory ActiveRouteState.fromJson(Map<String, dynamic> json) {
+    return ActiveRouteState(
+      isTracking: json['isTracking'] as bool,
+      isPaused: json['isPaused'] as bool,
+      routeStartTime: json['routeStartTime'] != null ? DateTime.parse(json['routeStartTime'] as String) : null,
+      pauseStartTime: json['pauseStartTime'] != null ? DateTime.parse(json['pauseStartTime'] as String) : null,
+      totalPausedTime: Duration(milliseconds: json['totalPausedTimeMs'] as int),
+      routePoints: (json['routePoints'] as List<dynamic>).map((p) => RoutePoint(position: LatLng(p['lat'] as double, p['lng'] as double), altitude: p['altitude'] as double, timestamp: DateTime.parse(p['timestamp'] as String))).toList(),
+      exploredAreas: (json['exploredAreas'] as List<dynamic>).map((p) => LatLng(p['lat'] as double, p['lng'] as double)).toList(),
+      waypoints: (json['waypoints'] as List<dynamic>).map((w) => RouteWaypoint.fromJson(w as Map<String, dynamic>)).toList(),
+      totalDistance: (json['totalDistance'] as num).toDouble(),
+      totalAscent: (json['totalAscent'] as num).toDouble(),
+      totalDescent: (json['totalDescent'] as num).toDouble(),
+      lastAltitude: (json['lastAltitude'] as num).toDouble(),
+    );
   }
 }
 

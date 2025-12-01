@@ -58,6 +58,12 @@ class LocationService {
         permission = await Geolocator.requestPermission();
       }
 
+      // Arka plan konumu için "always" izni iste
+      if (permission == LocationPermission.whileInUse) {
+        // Arka plan için always izni iste
+        permission = await Geolocator.requestPermission();
+      }
+
       final LocationPermissionStatus permissionStatus = _mapPermission(permission);
 
       final status = LocationServiceStatus(isEnabled: serviceEnabled, permissionStatus: permissionStatus);
@@ -68,6 +74,27 @@ class LocationService {
       final status = LocationServiceStatus(isEnabled: false, permissionStatus: LocationPermissionStatus.unknown, errorMessage: e.toString());
       _statusController.add(status);
       return status;
+    }
+  }
+
+  /// Arka plan konum iznini iste (Android için)
+  Future<bool> requestBackgroundLocationPermission() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.always) {
+        return true;
+      }
+
+      if (permission == LocationPermission.whileInUse) {
+        // Android için: Kullanıcıya arka plan izni iste
+        final newPermission = await Geolocator.requestPermission();
+        return newPermission == LocationPermission.always;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('Arka plan konum izni hatası: $e');
+      return false;
     }
   }
 
@@ -103,8 +130,8 @@ class LocationService {
       // Mevcut stream'i kapat
       await stopLocationTracking();
 
-      // Android için foreground notification ayarla (arkaplanda konum almak için)
-      await Geolocator.requestPermission();
+      // Android için arka plan izni kontrolü
+      await requestBackgroundLocationPermission();
 
       // Platform-specific location settings for continuous tracking
       late LocationSettings locationSettings;
@@ -114,17 +141,25 @@ class LocationService {
           accuracy: accuracy,
           distanceFilter: distanceFilter > 0 ? distanceFilter : 10, // Minimum 10m distance filter
           forceLocationManager: false,
-          intervalDuration: const Duration(milliseconds: 1000), // Update every 1000ms (1 second) to reduce system load
+          intervalDuration: const Duration(milliseconds: 1000), // Update every 1000ms (1 second)
           foregroundNotificationConfig: const ForegroundNotificationConfig(
             notificationText: "Rota takibi devam ediyor",
             notificationTitle: "World Fog",
-            enableWakeLock: false,
+            enableWakeLock: true, // Wake lock aktif - uygulamanın arka planda çalışmasını sağlar
             notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+            setOngoing: true, // Bildirim kapatılamaz
           ),
         );
       } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
         // automotiveNavigation provides most frequent updates for real-time tracking
-        locationSettings = AppleSettings(accuracy: accuracy, activityType: ActivityType.automotiveNavigation, distanceFilter: distanceFilter, pauseLocationUpdatesAutomatically: false, showBackgroundLocationIndicator: true);
+        locationSettings = AppleSettings(
+          accuracy: accuracy,
+          activityType: ActivityType.automotiveNavigation,
+          distanceFilter: distanceFilter,
+          pauseLocationUpdatesAutomatically: false,
+          showBackgroundLocationIndicator: true,
+          allowBackgroundLocationUpdates: true, // iOS için arka plan güncellemeleri
+        );
       } else {
         locationSettings = LocationSettings(accuracy: accuracy, distanceFilter: distanceFilter);
       }

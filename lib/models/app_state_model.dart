@@ -5,30 +5,44 @@ class AppSettingsModel {
   final double explorationRadius;
   final double areaOpacity;
   final double distanceFilter;
+  final bool isSatelliteView;
+  final bool showPastRoutes;
 
-  const AppSettingsModel({this.explorationRadius = 100.0, this.areaOpacity = 0.7, this.distanceFilter = 10.0});
+  const AppSettingsModel({this.explorationRadius = 100.0, this.areaOpacity = 0.7, this.distanceFilter = 10.0, this.isSatelliteView = false, this.showPastRoutes = false});
 
-  AppSettingsModel copyWith({double? explorationRadius, double? areaOpacity, double? distanceFilter}) {
-    return AppSettingsModel(explorationRadius: explorationRadius ?? this.explorationRadius, areaOpacity: areaOpacity ?? this.areaOpacity, distanceFilter: distanceFilter ?? this.distanceFilter);
+  AppSettingsModel copyWith({double? explorationRadius, double? areaOpacity, double? distanceFilter, bool? isSatelliteView, bool? showPastRoutes}) {
+    return AppSettingsModel(
+      explorationRadius: explorationRadius ?? this.explorationRadius,
+      areaOpacity: areaOpacity ?? this.areaOpacity,
+      distanceFilter: distanceFilter ?? this.distanceFilter,
+      isSatelliteView: isSatelliteView ?? this.isSatelliteView,
+      showPastRoutes: showPastRoutes ?? this.showPastRoutes,
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {'explorationRadius': explorationRadius, 'areaOpacity': areaOpacity, 'distanceFilter': distanceFilter};
+    return {'explorationRadius': explorationRadius, 'areaOpacity': areaOpacity, 'distanceFilter': distanceFilter, 'isSatelliteView': isSatelliteView, 'showPastRoutes': showPastRoutes};
   }
 
   factory AppSettingsModel.fromJson(Map<String, dynamic> json) {
-    return AppSettingsModel(explorationRadius: json['explorationRadius']?.toDouble() ?? 50.0, areaOpacity: json['areaOpacity']?.toDouble() ?? 0.3, distanceFilter: json['distanceFilter']?.toDouble() ?? 10.0);
+    return AppSettingsModel(
+      explorationRadius: json['explorationRadius']?.toDouble() ?? 50.0,
+      areaOpacity: json['areaOpacity']?.toDouble() ?? 0.3,
+      distanceFilter: json['distanceFilter']?.toDouble() ?? 10.0,
+      isSatelliteView: json['isSatelliteView'] ?? false,
+      showPastRoutes: json['showPastRoutes'] ?? false,
+    );
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is AppSettingsModel && other.explorationRadius == explorationRadius && other.areaOpacity == areaOpacity && other.distanceFilter == distanceFilter;
+    return other is AppSettingsModel && other.explorationRadius == explorationRadius && other.areaOpacity == areaOpacity && other.distanceFilter == distanceFilter && other.isSatelliteView == isSatelliteView && other.showPastRoutes == showPastRoutes;
   }
 
   @override
   int get hashCode {
-    return explorationRadius.hashCode ^ areaOpacity.hashCode ^ distanceFilter.hashCode;
+    return explorationRadius.hashCode ^ areaOpacity.hashCode ^ distanceFilter.hashCode ^ isSatelliteView.hashCode ^ showPastRoutes.hashCode;
   }
 }
 
