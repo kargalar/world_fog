@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:archive/archive.dart';
 import '../models/route_model.dart';
 
 class RouteService {
@@ -63,7 +64,7 @@ class RouteService {
     }
   }
 
-  /// Tüm rotaları JSON dosyası olarak dışa aktarır
+  /// Tüm rotaları ZIP dosyası olarak dışa aktarır (fotoğraflar dahil)
   static Future<String?> exportRoutes() async {
     try {
       final routes = await getSavedRoutes();
@@ -71,15 +72,66 @@ class RouteService {
         return null;
       }
 
-      final exportData = {'version': '1.0', 'exportDate': DateTime.now().toIso8601String(), 'routeCount': routes.length, 'routes': routes.map((route) => route.toJson()).toList()};
+      // Fotoğrafları topla ve yeniden adlandır
+      final Map<String, String> photoMapping = {}; // originalPath -> newName
+      int photoIndex = 0;
+
+      for (final route in routes) {
+        for (final waypoint in route.waypoints) {
+          if (waypoint.photoPath != null && waypoint.photoPath!.isNotEmpty) {
+            final file = File(waypoint.photoPath!);
+            if (await file.exists()) {
+              final extension = waypoint.photoPath!.split('.').last;
+              final newName = 'photos/photo_$photoIndex.$extension';
+              photoMapping[waypoint.photoPath!] = newName;
+              photoIndex++;
+            }
+          }
+        }
+      }
+
+      // Export verisi için rotaları hazırla (fotoğraf yollarını güncelle)
+      final exportRoutes = routes.map((route) {
+        final routeJson = route.toJson();
+        final updatedWaypoints = (routeJson['waypoints'] as List).map((w) {
+          final waypointMap = Map<String, dynamic>.from(w as Map<String, dynamic>);
+          if (waypointMap['photoPath'] != null && photoMapping.containsKey(waypointMap['photoPath'])) {
+            waypointMap['photoPath'] = photoMapping[waypointMap['photoPath']];
+          }
+          return waypointMap;
+        }).toList();
+        routeJson['waypoints'] = updatedWaypoints;
+        return routeJson;
+      }).toList();
+
+      final exportData = {'version': '1.1', 'exportDate': DateTime.now().toIso8601String(), 'routeCount': routes.length, 'photoCount': photoMapping.length, 'routes': exportRoutes};
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(exportData);
+
+      // Archive oluştur
+      final archive = Archive();
+
+      // JSON dosyasını ekle
+      final jsonBytes = utf8.encode(jsonString);
+      archive.addFile(ArchiveFile('routes.json', jsonBytes.length, jsonBytes));
+
+      // Fotoğrafları ekle
+      for (final entry in photoMapping.entries) {
+        final file = File(entry.key);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          archive.addFile(ArchiveFile(entry.value, bytes.length, bytes));
+        }
+      }
+
+      // ZIP olarak encode et
+      final zipData = ZipEncoder().encode(archive);
 
       // Geçici dosya oluştur
       final directory = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${directory.path}/worldfog_routes_$timestamp.json');
-      await file.writeAsString(jsonString);
+      final file = File('${directory.path}/worldfog_routes_$timestamp.zip');
+      await file.writeAsBytes(zipData);
 
       // Dosyayı paylaş
       await Share.shareXFiles([XFile(file.path)], subject: 'World Fog Routes Export');
@@ -90,18 +142,55 @@ class RouteService {
     }
   }
 
-  /// JSON dosyasından rotaları içe aktarır
+  /// ZIP veya JSON dosyasından rotaları içe aktarır
   static Future<ImportResult> importRoutes({bool replaceExisting = false}) async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json', 'zip']);
 
       if (result == null || result.files.isEmpty) {
         return ImportResult(success: false, message: 'No file selected');
       }
 
-      final file = File(result.files.single.path!);
-      final jsonString = await file.readAsString();
-      final importData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final filePath = result.files.single.path!;
+      final isZip = filePath.toLowerCase().endsWith('.zip');
+
+      Map<String, dynamic> importData;
+      Map<String, String> extractedPhotos = {}; // archivePath -> localPath
+
+      if (isZip) {
+        // ZIP dosyasını işle
+        final file = File(filePath);
+        final bytes = await file.readAsBytes();
+        final archive = ZipDecoder().decodeBytes(bytes);
+
+        // routes.json dosyasını bul
+        final jsonFile = archive.files.firstWhere((f) => f.name == 'routes.json', orElse: () => throw Exception('routes.json not found in archive'));
+
+        final jsonString = utf8.decode(jsonFile.content as List<int>);
+        importData = jsonDecode(jsonString) as Map<String, dynamic>;
+
+        // Fotoğrafları çıkar
+        final appDir = await getApplicationDocumentsDirectory();
+        final photosDir = Directory('${appDir.path}/imported_photos');
+        if (!await photosDir.exists()) {
+          await photosDir.create(recursive: true);
+        }
+
+        for (final archiveFile in archive.files) {
+          if (archiveFile.name.startsWith('photos/') && !archiveFile.isFile == false) {
+            final fileName = archiveFile.name.split('/').last;
+            final localPath = '${photosDir.path}/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+            final outputFile = File(localPath);
+            await outputFile.writeAsBytes(archiveFile.content as List<int>);
+            extractedPhotos[archiveFile.name] = localPath;
+          }
+        }
+      } else {
+        // JSON dosyasını işle
+        final file = File(filePath);
+        final jsonString = await file.readAsString();
+        importData = jsonDecode(jsonString) as Map<String, dynamic>;
+      }
 
       // Versiyon kontrolü
       final version = importData['version'] as String?;
@@ -114,7 +203,23 @@ class RouteService {
         return ImportResult(success: false, message: 'No routes found in file');
       }
 
-      final importedRoutes = routesJson.map((json) => RouteModel.fromJson(json as Map<String, dynamic>)).toList();
+      // Fotoğraf yollarını güncelle
+      final updatedRoutesJson = routesJson.map((routeJson) {
+        final routeMap = Map<String, dynamic>.from(routeJson as Map<String, dynamic>);
+        if (routeMap['waypoints'] != null) {
+          final updatedWaypoints = (routeMap['waypoints'] as List).map((w) {
+            final waypointMap = Map<String, dynamic>.from(w as Map<String, dynamic>);
+            if (waypointMap['photoPath'] != null && extractedPhotos.containsKey(waypointMap['photoPath'])) {
+              waypointMap['photoPath'] = extractedPhotos[waypointMap['photoPath']];
+            }
+            return waypointMap;
+          }).toList();
+          routeMap['waypoints'] = updatedWaypoints;
+        }
+        return routeMap;
+      }).toList();
+
+      final importedRoutes = updatedRoutesJson.map((json) => RouteModel.fromJson(json)).toList();
 
       if (replaceExisting) {
         // Mevcut rotaları sil ve yenileri ekle

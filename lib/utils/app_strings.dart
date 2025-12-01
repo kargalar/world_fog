@@ -94,10 +94,10 @@ class AppStrings {
   static const String exploredAreasVisibility = 'Visibility of Explored Areas';
   static const String exploredAreasVisibilityDescription = 'This setting determines how visible the explored areas are on the map. Lower values make the map appear clearer.';
   static const String mapSettings = 'Map Settings';
-  static const String clearExploredAreas = 'Clear Explored Areas';
-  static const String confirmClearExploredAreas = 'Are you sure you want to delete all explored areas? This action cannot be undone.';
-  static const String deleteAllExploredAreas = 'Deletes all explored areas from the map';
-  static const String exploredAreasCleared = 'Explored areas cleared';
+  static const String deleteAllData = 'Delete All Data';
+  static const String confirmDeleteAllData = 'Are you sure you want to delete all data including routes, explored areas, and photos? This action cannot be undone.';
+  static const String deleteAllDataDescription = 'Deletes all routes, explored areas, and photos';
+  static const String allDataDeleted = 'All data deleted';
   static const String appInfo = 'Application Information';
   static const String appNameLabel = 'Application Name';
   static const String versionLabel = 'Version';
@@ -178,9 +178,9 @@ class AppStrings {
   // Import/Export
   static const String dataManagement = 'Data Management';
   static const String exportRoutes = 'Export Routes';
-  static const String exportRoutesDescription = 'Export all route data as a JSON file';
+  static const String exportRoutesDescription = 'Export all route data with photos as a ZIP file';
   static const String importRoutes = 'Import Routes';
-  static const String importRoutesDescription = 'Import route data from a JSON file';
+  static const String importRoutesDescription = 'Import route data from a ZIP or JSON file';
   static const String exportSuccess = 'Routes exported successfully';
   static const String exportFailed = 'Export failed';
   static const String noRoutesToExport = 'No routes to export';

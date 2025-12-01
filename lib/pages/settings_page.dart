@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_strings.dart';
 import '../utils/app_colors.dart';
 import '../services/route_service.dart';
+import '../services/storage_service.dart';
 // import '../viewmodels/auth_viewmodel.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -155,29 +155,31 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _clearExploredAreas() async {
+  Future<void> _deleteAllData() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(AppStrings.clearExploredAreas),
-        content: const Text(AppStrings.confirmClearExploredAreas),
+        title: const Text(AppStrings.deleteAllData),
+        content: const Text(AppStrings.confirmDeleteAllData),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppStrings.cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
-            child: const Text(AppStrings.clear),
+            child: const Text(AppStrings.delete),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('explored_areas');
+      final storageService = StorageService();
+      await storageService.clearAllData();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.exploredAreasCleared), backgroundColor: AppColors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.allDataDeleted), backgroundColor: AppColors.green));
       }
+      // Uygulamayı kapat
+      SystemNavigator.pop();
     }
   }
 
@@ -229,13 +231,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 16),
                   ListTile(
-                    leading: const Icon(Icons.clear_all, color: AppColors.red),
-                    title: const Text(AppStrings.clearExploredAreas),
-                    subtitle: const Text(AppStrings.deleteAllExploredAreas),
+                    leading: const Icon(Icons.delete_forever, color: AppColors.red),
+                    title: const Text(AppStrings.deleteAllData),
+                    subtitle: const Text(AppStrings.deleteAllDataDescription),
                     trailing: ElevatedButton(
-                      onPressed: _clearExploredAreas,
+                      onPressed: _deleteAllData,
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.red, foregroundColor: AppColors.white),
-                      child: const Text(AppStrings.clear),
+                      child: const Text(AppStrings.delete),
                     ),
                   ),
                 ],

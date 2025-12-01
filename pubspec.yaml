@@ -27,6 +27,7 @@ dependencies:
   location: ^8.0.1
   file_picker: ^8.0.0+1
   share_plus: ^10.1.4
+  archive: ^4.0.7
 
 dev_dependencies:
   flutter_test:
