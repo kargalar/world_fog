@@ -45,24 +45,21 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.2
   flutter_native_splash: ^2.4.7
 
-# Splash Screen Settings
+# flutter pub run flutter_native_splash:create
 flutter_native_splash:
-  color: "#030303" # Arka plan rengi
-  image: assets/logo/splash600.png # Splash görüntüsü
+  color: "#000000" # Arka plan rengi
+  image: assets/logo/splash.png # Splash görüntüsü
+  fullscreen: true
   android_12:
-    image: assets/logo/splash1152.png # Android 12+ için splash görüntüsü
-    color: "#030303" # Arka plan rengi
+    image: assets/logo/splash.png # Splash görüntüsü
+    color: "#000000" # Arka plan rengi
 
-# App Icon Settings
-flutter_icons:
+# flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/logo/logo.png"
-  adaptive_icon_background: "#030303"
-  adaptive_icon_foreground: "assets/logo/logo_transparent.png"
   min_sdk_android: 21
-  remove_alpha_ios: true
-
 
 flutter:
 
