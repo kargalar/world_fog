@@ -1,7 +1,7 @@
 name: trodden
 description: "Explore the world around you, one step at a time."
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.8.1
