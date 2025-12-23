@@ -60,20 +60,29 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
     super.didChangeAppLifecycleState(state);
 
     final routeVM = context.read<RouteViewModel>();
+    final locationVM = context.read<LocationViewModel>();
 
     if (state == AppLifecycleState.resumed) {
       // App came to foreground - process any buffered location points
       debugPrint('📱 App resumed - processing buffered locations');
       routeVM.processBufferedLocations();
+
+      // Rota takibi devam ediyorsa konum servisinin hala çalıştığından emin ol
+      if (routeVM.isTracking && !locationVM.isTracking) {
+        debugPrint('📱 Restarting location tracking after resume');
+        locationVM.startLocationTracking();
+      }
     } else if (state == AppLifecycleState.paused) {
       // App went to background - enable buffering and save state
       debugPrint('📱 App paused - enabling location buffering and saving state');
       routeVM.enableLocationBuffering();
       routeVM.saveActiveRouteState();
+      // NOT: Konum servisini durdurmuyoruz - arka planda devam etmeli
     } else if (state == AppLifecycleState.detached) {
       // App is being terminated - save state
       debugPrint('📱 App detached - saving active route state');
       routeVM.saveActiveRouteState();
+      // NOT: Konum servisi Android'de foreground service ile devam edecek
     }
   }
 
@@ -104,6 +113,9 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
 
       // If location service is available, start location tracking
       if (locationVM.isLocationAvailable) {
+        // Arka plan konum izni iste
+        await locationVM.requestBackgroundLocationPermission();
+
         await locationVM.startLocationTracking(); // Uses default distanceFilter: 0 for real-time tracking
 
         // Get initial location
@@ -125,6 +137,10 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
       final hasActiveRoute = await routeVM.restoreActiveRouteState();
       if (hasActiveRoute) {
         debugPrint('📍 Aktif rota geri yüklendi');
+        // Aktif rota varsa arka plan konum takibinin devam ettiğinden emin ol
+        if (!locationVM.isTracking) {
+          await locationVM.startLocationTracking();
+        }
       }
 
       // Rota gridleri keşfetme callback'i ayarla
