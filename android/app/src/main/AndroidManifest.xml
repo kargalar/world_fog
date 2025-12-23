@@ -13,16 +13,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     
-    <!-- Battery optimization exclusion - keeps app running in background -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
-    
-    <!-- Receive boot completed to restart service after reboot if needed -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    
     <application android:label="Trodden" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
         
         <!-- Google Maps API Key -->
-        <meta-data android:name="com.google.android.geo.API_KEY" android:value="${googleMapsApiKey}"/>
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDZ3LScFefAG_FBgHpB-jgtzqIgz2QDA5I"/>
             
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as

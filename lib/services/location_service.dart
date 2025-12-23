@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/location_model.dart';
@@ -143,15 +142,7 @@ class LocationService {
           distanceFilter: distanceFilter > 0 ? distanceFilter : 10, // Minimum 10m distance filter
           forceLocationManager: false,
           intervalDuration: const Duration(milliseconds: 1000), // Update every 1000ms (1 second)
-          // Foreground Service bildirimi - Arka planda konum takibi için gerekli
-          foregroundNotificationConfig: const ForegroundNotificationConfig(
-            notificationText: 'Route tracking is active in background',
-            notificationTitle: 'Trodden - Recording Route',
-            notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
-            enableWakeLock: true,
-            enableWifiLock: true,
-            setOngoing: true,
-          ),
+          // Foreground notification devre dışı - NotificationService kullanılıyor
         );
       } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
         // automotiveNavigation provides most frequent updates for real-time tracking
@@ -244,25 +235,6 @@ class LocationService {
         return LocationPermissionStatus.deniedForever;
       case LocationPermission.unableToDetermine:
         return LocationPermissionStatus.unknown;
-    }
-  }
-
-  /// Android pil optimizasyonunu hariç tutma isteği
-  /// Bu, arka planda konum takibinin kesintisiz devam etmesini sağlar
-  Future<bool> requestBatteryOptimizationExemption() async {
-    if (defaultTargetPlatform != TargetPlatform.android) {
-      return true; // Diğer platformlarda gerekli değil
-    }
-
-    try {
-      const platform = MethodChannel('app.trodden/battery');
-      final result = await platform.invokeMethod<bool>('requestBatteryOptimizationExemption');
-      debugPrint('🔋 Pil optimizasyonu hariç tutma isteği: $result');
-      return result ?? false;
-    } catch (e) {
-      debugPrint('⚠️ Pil optimizasyonu hariç tutma hatası: $e');
-      // Method channel yoksa sessizce devam et
-      return false;
     }
   }
 
